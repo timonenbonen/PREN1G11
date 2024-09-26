@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-python.black-formatter",
+    "irongeek.vscode-env",
+    "ms-python.flake8",
+    "ms-python.isort",
+    "ms-python.vscode-pylance",
+    "zeshuaro.vscode-python-poetry"
+  ]
+}
