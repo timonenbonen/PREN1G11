@@ -1,0 +1,77 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "../protos/RectangleArena.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation 0.17942268052195776 0.00010104226210261568 -0.9837720729441229 3.140468867405253
+  position 4.156366450901345 -0.08835086738440764 1.8793461005906176
+  followType "None"
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+    Transform {
+      translation 0 0 0  # Position of the RectangleArena
+      children [
+        RectangleArena {
+          floorSize 5 5
+          floorTileSize 0.8 0.8
+        }
+      ]
+    }
+
+    Transform {
+      translation 1 0.1 0  # Position of the Cylinder (x, y, z)
+      children [
+        Shape {
+          geometry Cylinder {
+            height 0.1
+            radius 0.05
+          }
+        }
+      ]
+    }
+
+In this example:
+
+    The RectangleArena is placed at coordinates (0, 0, 0).
+    The Cylinder (in the Shape node) is translated to (1, 0.1, 0). Adjust the x, y, and z values in the translation field as needed.
+
+This should allow you to control the positions of both elements in your Webots world.
+You said:
+how do i change the orientation for those elements? 
+ChatGPT said:
+ChatGPT
+
+In Webots, you can change the orientation of elements using the rotation field within the Transform node. The rotation field takes four values: x, y, z for the axis of rotation, and the fourth value is the angle in radians.
+
+Here's how to modify the orientation of your elements:
+
+Transform {
+  translation 0 0 0  # Position of the RectangleArena
+  rotation 0 1 0 1.57  # Rotate 90 degrees around the y-axis
+  children [
+    RectangleArena {
+      floorSize 5 5
+      floorTileSize 0.8 0.8
+    }
+  ]
+}
+
+Transform {
+  translation 0 0 0  # Position of the Cylinder
+  rotation 1 0 0 3.14  # Rotate 180 degrees around the x-axis
+  children [
+    Shape {
+      geometry Cylinder {
+        height 0.1
+        radius 0.05
+      }
+    }
+  ]
+}
