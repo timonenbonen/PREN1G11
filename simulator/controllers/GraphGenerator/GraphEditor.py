@@ -138,6 +138,17 @@ class GraphEditor:
             self.canvas.itemconfig(self.edge_shapes[edge], dash=(4, 4) if line_style == "dashed" else ())
             self.canvas.coords(self.edge_shapes[edge], x1, y1, x2, y2)
 
+            # Update obstacle position if it exists
+            if self.edge_obstacles[edge] is not None:
+                mid_x = (x1 + x2) / 2
+                mid_y = (y1 + y2) / 2
+                obstacle_radius = 5
+                self.canvas.coords(
+                    self.edge_obstacles[edge],
+                    mid_x - obstacle_radius, mid_y - obstacle_radius,
+                    mid_x + obstacle_radius, mid_y + obstacle_radius
+                )
+
     def on_node_press(self, event):
         for node, oval in self.node_shapes.items():
             x, y = nodes[node]
