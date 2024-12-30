@@ -67,11 +67,18 @@ PointLight {
 
     # Add Pose elements for nodes
     for node, position in data["nodes"].items():
+        if node in data["target_node"]:
+            color = f"""  appearance PBRAppearance {{baseColor 0 0 1
+            metalness 0}}"""
+        else:
+            color = f"""  appearance PBRAppearance {{baseColor 1 1 1
+            metalness 0}}"""
         x, y = position
-        pose = f"""Pose {{
+        pose = f"""DEF {node} Pose {{
   translation {x} {y} 0
   children [
     Shape {{
+    {color}
       geometry Cylinder {{
         height 0.01
         radius 0.08
@@ -87,11 +94,15 @@ PointLight {
         x1, y1 = data["nodes"][node1]
         x2, y2 = data["nodes"][node2]
         angle, distance = calculate_angle_and_distance(x1, y1, x2, y2)
-        pose = f"""Pose {{
+        pose = f"""DEF {node1}{node2} Pose {{
   translation {(x1 + x2) / 2} {(y1 + y2) / 2} 0
   rotation 0 0 1 {angle}
   children [
     Shape {{
+      appearance PBRAppearance {{
+        baseColor 1 1 1
+        metalness 0
+      }}  
       geometry Box {{
         size {distance} 0.02 0.01
       }}
