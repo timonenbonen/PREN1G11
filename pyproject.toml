@@ -15,7 +15,7 @@ readme = "README.md"
 repository = "https://github.com/timonenbonen/PREN1G11"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 python-dotenv = "^1.0.1"
 loguru = "^0.7.2"
 opencv-python-headless = "^4.10.0.84"

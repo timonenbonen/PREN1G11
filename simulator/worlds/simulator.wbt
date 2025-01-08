@@ -3,18 +3,20 @@
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
+IMPORTABLE EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/traffic/protos/TrafficCone.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.2560803139938966 -0.10364928024260135 0.9610825664270359 3.883582953441661
-  position -1.4462580638620823 -1.3199776289403695 2.0639717998590306
+  orientation -0.35241250449377853 0.3495367612315472 0.8681183555392563 1.7198620435283878
+  position 2.7837712305399744 -1.3685257274045846 3.7950674999341394
 }
 TexturedBackground {
 }
 TexturedBackgroundLight {
 }
 RectangleArena {
+  translation 2.75 2.75 0
   floorSize 10 10
   floorTileSize 0.4 0.4
   floorAppearance Appearance {
@@ -22,7 +24,6 @@ RectangleArena {
       diffuseColor 1 1 1
       shininess 0.8
       specularColor 0.1 0.1 0.1
-      emissiveColor 0 0 0
     }
     texture ImageTexture {
       url [
@@ -38,25 +39,35 @@ RectangleArena {
   }
 }
 PointLight {
-  location 0 5 0
-  color 1 1 1
-  intensity 2
   attenuation 0 0 0.1
-  on TRUE
+  intensity 2
+  location 2.75 7.75 0
 }
-Robot {
+DEF MyRobot Robot {
+  translation 2.8125 1.30625 0
+  rotation 0 0 1 1.5708
   children [
-    DistanceSensor {
-      name "floor_sensor"
-      type "infra-red"
-      translation 0 0.1 0
-      rotation 1 0 0 -1.57
-      lookupTable [
-        0 0 0
-        1 1 1
+    Solid {
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.3 0.3 0.3
+            transparency 0.03
+            roughness 0.5
+            metalness 0.1
+          }
+          geometry Mesh {
+            url [
+              "../../chassis_without_obstacle.obj"
+            ]
+          }
+        }
       ]
+      boundingObject Box {
+        size 0.2 0.2 0.2
+      }
     }
   ]
+  controller "CreateGraphInWbt"
+  supervisor TRUE
 }
-
-# https://cyberbotics.com/doc/reference/distancesensor#line-following-behavior
