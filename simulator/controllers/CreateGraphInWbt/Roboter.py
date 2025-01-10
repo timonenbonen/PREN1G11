@@ -192,14 +192,12 @@ class Roboter(Supervisor):
         # Access the 'children' field of the Solid node
         solid_children_field = solid_node.getField("children")
 
-        # Get the Shape node (assuming it's the first child of Solid)
+        # Get the CadShape node (assuming it's the first child of Solid)
         shape_node = solid_children_field.getMFNode(0)
 
         # Access the geometry node of the Shape
-        geometry_node = shape_node.getField("geometry").getSFNode()
+        shape_node.getField("url").setMFString(0, obj_path)
 
-        # Access the 'url' field and update the .obj file path
-        geometry_node.getField("url").setMFString(0, obj_path)
 
 
 

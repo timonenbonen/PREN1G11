@@ -49,18 +49,10 @@ DEF MyRobot Robot {
   children [
     Solid {
       children [
-        Shape {
-          appearance PBRAppearance {
-            baseColor 0.3 0.3 0.3
-            transparency 0.03
-            roughness 0.5
-            metalness 0.1
-          }
-          geometry Mesh {
-            url [
-              "../../chassis_without_obstacle.obj"
-            ]
-          }
+        CadShape {
+          url [
+            "../../chassis_without_obstacle.obj"
+          ]
         }
       ]
       boundingObject Box {
