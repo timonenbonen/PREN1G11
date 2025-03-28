@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Bild laden
-original_pfad = r"C:\Users\marin\PycharmProjects\PREN1G11\tile.png"
+original_pfad = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\MusterBoden\Test1.jpg"
 bild = cv2.imread(original_pfad)
 
 # Überprüfen, ob das Bild geladen wurde
