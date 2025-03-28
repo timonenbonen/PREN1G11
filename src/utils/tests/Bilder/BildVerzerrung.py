@@ -39,7 +39,7 @@ def warp_image(image_path, dst_points, output_path):
 
 
 if __name__ == "__main__":
-    input_image = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\MusterBoden\boden1.jpg"
+    input_image = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\MusterBoden\IMG20250324095259.jpg"
     output_image = "output.jpg"
 
     print("Bitte wähle 4 Punkte im Bild aus.")
