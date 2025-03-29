@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import filedialog, Scale, Button, Label, Frame, StringVar, colorchooser
 from PIL import Image, ImageTk
 import os
-import json
 
 
 class FarbfilterApp:
@@ -63,13 +62,6 @@ class FarbfilterApp:
         # Bild bearbeiten und speichern
         Button(control_frame, text="Vorschau aktualisieren", command=self.vorschau_aktualisieren).pack(fill=tk.X,
                                                                                                        pady=(20, 5))
-
-        # Neue Buttons für das Speichern und Laden von Einstellungen
-        Button(control_frame, text="Einstellungen speichern", command=self.einstellungen_speichern).pack(fill=tk.X,
-                                                                                                         pady=5)
-        Button(control_frame, text="Einstellungen laden", command=self.einstellungen_laden).pack(fill=tk.X, pady=5)
-
-        # Behalte den Bild speichern Button, falls gewünscht
         Button(control_frame, text="Bild speichern", command=self.bild_speichern).pack(fill=tk.X, pady=5)
 
         # Status
@@ -216,7 +208,7 @@ class FarbfilterApp:
         kombinierte_maske = cv2.bitwise_or(kombinierte_maske_farben, cv2.bitwise_not(helligkeits_maske))
 
         # Ausgewählte Farben und dunkle Bereiche durch Weiß ersetzen
-        bild_bearbeitet[kombinierte_maske != 0] = (0, 0, 0)
+        bild_bearbeitet[kombinierte_maske != 0] = (255, 255, 255)
 
         # Bearbeitetes Bild anzeigen
         self.zeige_bearbeitetes_bild(bild_bearbeitet)
@@ -237,87 +229,6 @@ class FarbfilterApp:
         self.bearbeitet_photo = ImageTk.PhotoImage(image=Image.fromarray(bild_anzeige))
         self.bearbeitet_canvas.config(width=neue_breite, height=neue_hoehe)
         self.bearbeitet_canvas.create_image(0, 0, anchor=tk.NW, image=self.bearbeitet_photo)
-
-    def einstellungen_speichern(self):
-        if not self.ausgewaehlte_farben:
-            self.status_var.set("Keine Einstellungen zum Speichern vorhanden.")
-            return
-
-        # Dialog zum Speichern öffnen
-        speicherpfad = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON-Datei", "*.json"), ("Alle Dateien", "*.*")],
-            initialdir=os.path.dirname(self.bild_pfad) if self.bild_pfad else None,
-            initialfile="farbfilter_einstellungen.json"
-        )
-
-        if not speicherpfad:
-            return
-
-        # Einstellungen als JSON speichern
-        einstellungen = {
-            "farben": self.ausgewaehlte_farben,
-            "toleranz": self.toleranz,
-            "helligkeit_schwellenwert": self.helligkeit_schwellenwert,
-            "quellbild": self.bild_pfad if self.bild_pfad else None
-        }
-
-        try:
-            with open(speicherpfad, 'w', encoding='utf-8') as f:
-                json.dump(einstellungen, f, indent=4)
-            self.status_var.set(f"Einstellungen gespeichert unter: {speicherpfad}")
-        except Exception as e:
-            self.status_var.set(f"Fehler beim Speichern der Einstellungen: {str(e)}")
-
-    def einstellungen_laden(self):
-        # Dialog zum Laden öffnen
-        ladepfad = filedialog.askopenfilename(
-            defaultextension=".json",
-            filetypes=[("JSON-Datei", "*.json"), ("Alle Dateien", "*.*")]
-        )
-
-        if not ladepfad:
-            return
-
-        try:
-            with open(ladepfad, 'r', encoding='utf-8') as f:
-                einstellungen = json.load(f)
-
-            # Einstellungen anwenden
-            self.ausgewaehlte_farben = einstellungen.get("farben", [])
-            self.toleranz = einstellungen.get("toleranz", 40)
-            self.helligkeit_schwellenwert = einstellungen.get("helligkeit_schwellenwert", 150)
-
-            # Quellbild laden, wenn vorhanden und nötig
-            quellbild_pfad = einstellungen.get("quellbild")
-            if quellbild_pfad and (self.bild_pfad != quellbild_pfad or self.bild_original is None):
-                if os.path.exists(quellbild_pfad):
-                    self.bild_pfad = quellbild_pfad
-                    self.bild_original = cv2.imread(self.bild_pfad)
-                    if self.bild_original is not None:
-                        self.zeige_original_bild()
-                    else:
-                        self.status_var.set("Warnung: Gespeichertes Quellbild konnte nicht geladen werden.")
-                else:
-                    self.status_var.set("Warnung: Gespeichertes Quellbild existiert nicht mehr.")
-
-            # GUI aktualisieren
-            self.toleranz_scale.set(self.toleranz)
-            self.helligkeit_scale.set(self.helligkeit_schwellenwert)
-
-            # Farb-Buttons neu erstellen
-            for widget in self.farben_frame.winfo_children():
-                widget.destroy()
-
-            for farbe in self.ausgewaehlte_farben:
-                self._farb_button_erstellen(farbe)
-
-            # Vorschau aktualisieren
-            self.vorschau_aktualisieren()
-
-            self.status_var.set(f"Einstellungen geladen aus: {ladepfad}")
-        except Exception as e:
-            self.status_var.set(f"Fehler beim Laden der Einstellungen: {str(e)}")
 
     def bild_speichern(self):
         if self.bild_original is None:
