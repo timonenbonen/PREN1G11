@@ -8,6 +8,62 @@ from ultralytics import YOLO
 import threading
 import numpy as np
 
+from src.utils.tests.Bilder.main.main import detect_objects
+
+
+class Objekt:
+    def __init__(self, klasse, vertrauen, bounding_box):
+        """
+        Erstellt ein neues Objekt mit den angegebenen Eigenschaften und berechnet automatisch
+        die Fläche und das Zentrum der Bounding Box.
+
+        :param klasse: String - Art des erkannten Objekts (z.B. 'barrier', 'point', 'wall')
+        :param vertrauen: float - Vertrauenswert in Prozent (z.B. 99.2)
+        :param bounding_box: tuple - Koordinaten (x1, y1, x2, y2)
+        """
+        self.klasse = klasse
+        self.vertrauen = vertrauen
+        self.bounding_box = bounding_box
+
+        # Automatische Berechnung von Fläche und Zentrum
+        self.flaeche = self._berechne_flaeche()
+        self.zentrum = self._berechne_zentrum()
+
+        # Buchstabe wird später zugeordnet
+        self.buchstabe = None
+
+    def __str__(self):
+        """Liefert eine lesbare String-Darstellung des Objekts"""
+        buchstabe_info = f", Buchstabe: {self.buchstabe}" if self.buchstabe else ""
+        return f"Objekt: {self.klasse}, Vertrauen: {self.vertrauen:.1f}%, Zentrum: {self.zentrum}, Fläche: {self.flaeche}{buchstabe_info}"
+
+    def __repr__(self):
+        """Liefert eine formale String-Darstellung des Objekts"""
+        return f"Objekt(klasse='{self.klasse}', vertrauen={self.vertrauen}, bounding_box={self.bounding_box})"
+
+    def _berechne_flaeche(self):
+        """Berechnet die Fläche der Bounding Box"""
+        x1, y1, x2, y2 = self.bounding_box
+        breite = x2 - x1
+        hoehe = y2 - y1
+        return breite * hoehe
+
+    def _berechne_zentrum(self):
+        """Berechnet den Mittelpunkt der Bounding Box"""
+        x1, y1, x2, y2 = self.bounding_box
+        zentrum_x = (x1 + x2) / 2
+        zentrum_y = (y1 + y2) / 2
+        return (zentrum_x, zentrum_y)
+
+    def set_buchstabe(self, buchstabe):
+        """Setzt den Buchstaben für dieses Objekt"""
+        self.buchstabe = buchstabe
+        return self
+
+    def ist_vertrauenswuerdig(self, schwellenwert=50.0):
+        """Prüft, ob der Vertrauenswert über dem Schwellenwert liegt"""
+        return self.vertrauen >= schwellenwert
+
 
 class YoloDetectorApp:
     def __init__(self, root):
@@ -18,6 +74,7 @@ class YoloDetectorApp:
         # Standardpfade
         self.model_path = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\YoloModells\model=yolov8npt epochs=100 imgsz=640\my_model.pt'
         self.image_folder = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\MusterBoden'
+        self.output_file = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\objekte.txt'  # Pfad zur Ausgabedatei
         self.threshold = 10  # In Prozent (10 = 0.1)
 
         # Variablen
@@ -28,6 +85,7 @@ class YoloDetectorApp:
         self.processed_frame = None
         self.is_processing = False
         self.photo_image = None
+        self.detected_objects = []  # Liste für erkannte Objekte
 
         # GUI-Layout erstellen
         self.erstelle_layout()
@@ -78,6 +136,10 @@ class YoloDetectorApp:
         Button(self.control_frame, text="Zufallsbild laden & detektieren", command=self.neues_bild_laden).pack(
             fill=tk.X,
             pady=(20, 5))
+
+        # Objekte in Datei speichern Button (statt Konsole)
+        Button(self.control_frame, text="Objekte in Datei speichern", command=self.objekte_in_datei_speichern).pack(
+            fill=tk.X, pady=5)
 
         # Checkbox für automatische Erkennung bei Schwellenwertänderung
         self.auto_detect_var = IntVar(value=1)
@@ -251,18 +313,17 @@ class YoloDetectorApp:
 
         def detect_thread():
             try:
-                # Kopie des Frames erstellen
                 frame_with_boxes = self.current_frame.copy()
-
-                # Schwellenwert in Dezimalwert umwandeln (von % zu 0-1)
                 conf_threshold = self.threshold / 100.0
-
-                # YOLO Inferenz
                 results = self.model(frame_with_boxes, verbose=False, conf=conf_threshold)
                 detections = results[0].boxes
 
-                # Ergebnisse sammeln für die Anzeige
                 results_text = []
+                self.detected_objects = []  # Zurücksetzen der erkannten Objekte
+
+                # Buchstabenliste für Objekte
+                buchstaben = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                buchstaben_index = 0
 
                 for det in detections:
                     xmin, ymin, xmax, ymax = map(int, det.xyxy[0])
@@ -276,20 +337,22 @@ class YoloDetectorApp:
                     cv2.putText(frame_with_boxes, label, (xmin, ymin - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                    # Zur Ergebnisanzeige hinzufügen
+                    # Objekt erstellen und zur Liste hinzufügen
+                    objekt = Objekt(classname, conf * 100, (xmin, ymin, xmax, ymax))
+
+                    self.detected_objects.append(objekt)
+
+                    # Für die GUI-Anzeige
                     results_text.append(f"{classname}: {int(conf * 100)}%")
 
-                # Ergebnistext aktualisieren
                 if results_text:
                     self.results_var.set("\n".join(results_text))
                 else:
                     self.results_var.set("Keine Objekte erkannt")
 
-                # Verarbeitetes Bild anzeigen
                 self.processed_frame = frame_with_boxes
                 self.zeige_bild(frame_with_boxes)
 
-                # Status aktualisieren
                 self.status_var.set(f"Erkennung abgeschlossen: {len(results_text)} Objekte gefunden")
 
             except Exception as e:
@@ -297,8 +360,24 @@ class YoloDetectorApp:
             finally:
                 self.is_processing = False
 
-        # In einem separaten Thread ausführen
         threading.Thread(target=detect_thread).start()
+
+    def objekte_in_datei_speichern(self):
+        if not self.detected_objects:
+            self.status_var.set("Keine Objekte zum Speichern vorhanden.")
+            return
+
+        try:
+            with open(self.output_file, 'w') as f:
+                for obj in self.detected_objects:
+                    print(f"DEBUG: Objekt {obj.klasse} - Buchstabe: {obj.buchstabe}")  # Debug
+                    line = f"{obj.klasse};{obj.vertrauen:.1f}%;{obj.bounding_box};{obj.flaeche};{obj.zentrum};{obj.buchstabe if obj.buchstabe else ''}\n"
+                    f.write(line)
+
+            self.status_var.set(
+                f"{len(self.detected_objects)} Objekte gespeichert: {os.path.basename(self.output_file)}")
+        except Exception as e:
+            self.status_var.set(f"Fehler beim Speichern: {str(e)}")
 
 
 # Programm starten
