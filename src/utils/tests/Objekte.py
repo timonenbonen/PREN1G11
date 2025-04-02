@@ -43,11 +43,26 @@ class Objekt:
         return breite * hoehe
 
     def _berechne_zentrum(self):
-        """Berechnet den Mittelpunkt der Bounding Box"""
+        """
+        Berechnet den Mittelpunkt der Bounding Box.
+        - Für 'barrier':
+          - x = normaler horizontaler Mittelpunkt
+          - y = unterer Rand + halbe Breite von unten nach oben
+        - Für alle anderen Objekte: normales Zentrum
+        """
         x1, y1, x2, y2 = self.bounding_box
-        zentrum_x = (x1 + x2) / 2
-        zentrum_y = (y1 + y2) / 2
+        breite = x2 - x1
+        hoehe = y2 - y1
+
+        if self.klasse == 'barrier':
+            zentrum_x = (x1 + x2) / 2
+            zentrum_y = y2 - (breite / 2)  # von unten nach oben
+        else:
+            zentrum_x = (x1 + x2) / 2
+            zentrum_y = (y1 + y2) / 2
+
         return (zentrum_x, zentrum_y)
+
 
     def set_buchstabe(self, buchstabe):
         """Setzt den Buchstaben für dieses Objekt"""
