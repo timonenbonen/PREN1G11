@@ -2,8 +2,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 # Adjazenzmatrix aus dem bereitgestellten Bild
 adjacency_matrix = np.array([
+    # A B C D E F G H
     [0, 1, 0, 0, 0, 1, 0, 1],  # A
     [1, 0, 1, 0, 0, 0, 0, 1],  # B
     [0, 1, 0, 1, 0, 0, 1, 1],  # C

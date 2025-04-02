@@ -3,13 +3,12 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import os
+from itertools import combinations
 
 
 class Objekt:
     def __init__(self, klasse, vertrauen, bounding_box):
-        """
-        Erstellt ein neues Objekt mit automatischer Buchstaben-Zuweisung für pointa/b/c.
-        """
+        """Erstellt ein neues Objekt mit automatischer Buchstaben-Zuweisung für pointa/b/c."""
         self.klasse = klasse
         self.vertrauen = vertrauen
         self.bounding_box = bounding_box
@@ -17,7 +16,6 @@ class Objekt:
         self.zentrum = self._berechne_zentrum()
         self.buchstabe = None
 
-        # Automatische Buchstaben für pointa/b/c
         if self.klasse in ['pointa', 'pointb', 'pointc']:
             self.set_buchstabe_automatisch()
 
@@ -40,7 +38,116 @@ class Objekt:
     def ist_vertrauenswuerdig(self, schwellenwert=50.0):
         return self.vertrauen >= schwellenwert
 
+    @staticmethod
+    def create_adjacency_matrix(objekte_liste, connection_image_path, connection_threshold=0.2, bar_width=40):
+        """Erstellt eine Adjazenzmatrix mit Analyse eines breiten Balkens zwischen Punkten."""
+        # Buchstaben-Liste für das Original-Schema
+        buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 
+        # Original Matrix als Vorlage
+        original_matrix = np.array([
+            # A B C D E F G H
+            [0, 1, 0, 0, 0, 1, 0, 1],  # A
+            [1, 0, 1, 0, 0, 0, 0, 1],  # B
+            [0, 1, 0, 1, 0, 0, 1, 1],  # C
+            [0, 0, 1, 0, 1, 0, 1, 0],  # D
+            [0, 0, 0, 1, 0, 1, 1, 0],  # E
+            [1, 0, 0, 0, 1, 0, 1, 1],  # F
+            [0, 0, 1, 1, 1, 1, 0, 1],  # G
+            [1, 1, 1, 0, 0, 1, 1, 0]  # H
+        ])
+
+        # Dictionary für Objekte nach Buchstaben
+        punkt_dict = {obj.buchstabe: obj for obj in objekte_liste if obj.buchstabe in buchstaben}
+        vorhandene_buchstaben = sorted(list(punkt_dict.keys()))
+        print("Vorhandene Buchstaben:", vorhandene_buchstaben)
+
+        # Neue Matrix für vorhandene Buchstaben
+        n = len(vorhandene_buchstaben)
+        adjacency_matrix = np.zeros((n, n), dtype=int)
+
+        # Mapping zu Original-Indizes
+        buchstaben_zu_original_index = {b: buchstaben.index(b) for b in vorhandene_buchstaben if b in buchstaben}
+
+        try:
+            # Bild laden und in Graustufen umwandeln
+            connection_image = cv2.imread(connection_image_path)
+            if connection_image is None:
+                raise FileNotFoundError(f"Verbindungsbild nicht gefunden: {connection_image_path}")
+            gray = cv2.cvtColor(connection_image, cv2.COLOR_BGR2GRAY)
+
+            # Alle möglichen Verbindungen prüfen
+            for i, b1 in enumerate(vorhandene_buchstaben):
+                for j, b2 in enumerate(vorhandene_buchstaben):
+                    if i >= j:  # Nur obere Dreiecksmatrix prüfen
+                        continue
+
+                    # Prüfen, ob in Original-Matrix eine Verbindung vorhanden ist
+                    orig_i = buchstaben_zu_original_index.get(b1)
+                    orig_j = buchstaben_zu_original_index.get(b2)
+                    if orig_i is None or orig_j is None or original_matrix[orig_i][orig_j] != 1:
+                        continue
+
+                    punkt1 = punkt_dict[b1]
+                    punkt2 = punkt_dict[b2]
+                    p1 = (int(punkt1.zentrum[0]), int(punkt1.zentrum[1]))
+                    p2 = (int(punkt2.zentrum[0]), int(punkt2.zentrum[1]))
+
+                    # Vektor zwischen den Punkten berechnen
+                    dx = p2[0] - p1[0]
+                    dy = p2[1] - p1[1]
+                    length = max(1, int(np.sqrt(dx * dx + dy * dy)))
+
+                    # Normalvektor für die Breite des Balkens
+                    if dx == 0 and dy == 0:  # Falls Punkte identisch sind
+                        continue
+
+                    # Normalisierter Richtungsvektor
+                    nx = -dy / length
+                    ny = dx / length
+
+                    # Pixel im Balken analysieren
+                    non_white_count = 0
+                    total_pixels = 0
+
+                    # Durch die Länge der Linie gehen
+                    for t in range(length):
+                        # Mittelpunkt der Linie bei diesem t
+                        x = int(p1[0] + t * dx / length)
+                        y = int(p1[1] + t * dy / length)
+
+                        # Durch die Breite des Balkens gehen
+                        for w in range(-bar_width // 2, bar_width // 2 + 1):
+                            wx = int(x + w * nx)
+                            wy = int(y + w * ny)
+
+                            # Sicherstellen, dass die Koordinaten im Bild liegen
+                            if 0 <= wx < gray.shape[1] and 0 <= wy < gray.shape[0]:
+                                total_pixels += 1
+                                if gray[wy, wx] < 245:  # Nicht weiß
+                                    non_white_count += 1
+
+                    if total_pixels == 0:
+                        print(f"Warnung: Keine Pixel im Balken zwischen {b1}-{b2}")
+                        continue
+
+                    # Verhältnis berechnen
+                    connection_ratio = non_white_count / total_pixels
+
+                    # Verbindung basierend auf dem Verhältnis bestimmen
+                    if connection_ratio >= connection_threshold:
+                        adjacency_matrix[i][j] = 1
+                        adjacency_matrix[j][i] = 1  # Symmetrie einhalten
+                        print(f"Verbindung bestätigt: {b1}-{b2} (Ratio: {connection_ratio:.2f})")
+                    else:
+                        print(f"Keine Verbindung: {b1}-{b2} (Ratio: {connection_ratio:.2f})")
+
+        except Exception as e:
+            print(f"Fehler bei Matrix-Erstellung: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+        return adjacency_matrix, vorhandene_buchstaben
 
 
 
@@ -151,9 +258,10 @@ class Objekt:
                 print("Warnung: Doppelte Buchstaben erkannt!")
 
     @classmethod
-    def draw_objects_on_image(cls, image_path, objekte_liste, output_path="output.jpg"):
+    def draw_objects_on_image(cls, image_path, objekte_liste, output_path="output.jpg", bar_width=20):
         """
-        Zeichnet alle Objekte mit Buchstaben auf das Bild (kompatibel mit Pillow >= 8.0.0)
+        Zeichnet alle Objekte mit Buchstaben und Verbindungsbalken auf das Bild,
+        aber nur Verbindungen, die in der tatsächlichen Adjazenzmatrix gefunden wurden.
         """
         try:
             # Bild laden
@@ -180,12 +288,80 @@ class Objekt:
                 'F': (0, 255, 255),  # Cyan
                 'G': (255, 165, 0),  # Orange
                 'H': (128, 0, 128),  # Lila
-                'default': (255, 255, 255)  # Weiß
+                'default': (0, 255, 255)  # Cyan
             }
 
             # Linienstärke
             thickness = max(2, int(image.width / 400))
 
+            # Buchstaben für Punkte und Adjazenzmatrix erstellen
+            buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+            punkt_dict = {obj.buchstabe: obj for obj in objekte_liste if obj.buchstabe in buchstaben}
+            vorhandene_buchstaben = sorted(list(punkt_dict.keys()))
+
+            # Erstelle die Adjazenzmatrix basierend auf dem aktuellen Bild
+            adj_matrix, matrix_buchstaben = cls.create_adjacency_matrix(objekte_liste, image_path)
+
+            # Erstelle ein Mapping der Buchstaben-Indizes in der Matrix
+            buchstaben_zu_matrix_index = {b: matrix_buchstaben.index(b) for b in matrix_buchstaben}
+
+            # Alle gefundenen Verbindungen zeichnen (nur diejenigen, die in der Matrix auf 1 gesetzt sind)
+            for i, b1 in enumerate(matrix_buchstaben):
+                for j, b2 in enumerate(matrix_buchstaben):
+                    if i >= j:  # Nur obere Dreiecksmatrix prüfen
+                        continue
+
+                    # Nur zeichnen, wenn in der tatsächlichen Adjazenzmatrix eine Verbindung besteht
+                    if adj_matrix[i][j] != 1:
+                        continue
+
+                    punkt1 = punkt_dict[b1]
+                    punkt2 = punkt_dict[b2]
+                    p1 = (int(punkt1.zentrum[0]), int(punkt1.zentrum[1]))
+                    p2 = (int(punkt2.zentrum[0]), int(punkt2.zentrum[1]))
+
+                    # Farbe für die Verbindung (Mittelwert der beiden Punktfarben)
+                    color1 = colors.get(b1, colors['default'])
+                    color2 = colors.get(b2, colors['default'])
+                    line_color = tuple((c1 + c2) // 2 for c1, c2 in zip(color1, color2))
+
+                    # Vektor zwischen den Punkten berechnen
+                    dx = p2[0] - p1[0]
+                    dy = p2[1] - p1[1]
+                    length = max(1, int(np.sqrt(dx * dx + dy * dy)))
+
+                    # Normalvektor für die Breite des Balkens
+                    if dx == 0 and dy == 0:  # Falls Punkte identisch sind
+                        continue
+
+                    # Normalisierter Richtungsvektor
+                    nx = -dy / length
+                    ny = dx / length
+
+                    # Punkte für das Polygon des Balkens berechnen
+                    polygon_points = []
+
+                    # Obere Seite des Balkens
+                    for t in [0, length]:
+                        x = p1[0] + t * dx / length
+                        y = p1[1] + t * dy / length
+                        wx = int(x + (bar_width / 2) * nx)
+                        wy = int(y + (bar_width / 2) * ny)
+                        polygon_points.append((wx, wy))
+
+                    # Untere Seite des Balkens (in umgekehrter Reihenfolge)
+                    for t in [length, 0]:
+                        x = p1[0] + t * dx / length
+                        y = p1[1] + t * dy / length
+                        wx = int(x - (bar_width / 2) * nx)
+                        wy = int(y - (bar_width / 2) * ny)
+                        polygon_points.append((wx, wy))
+
+                    # Balken zeichnen (halbdurchsichtig)
+                    draw.polygon(polygon_points, fill=line_color + (128,), outline=line_color)
+                    print(f"Verbindung gezeichnet: {b1}-{b2}")
+
+            # Dann alle Objekte zeichnen (über den Balken)
             for obj in objekte_liste:
                 # Farbe bestimmen
                 color = colors.get(
@@ -237,45 +413,34 @@ class Objekt:
         return f"Objekt(klasse='{self.klasse}', vertrauen={self.vertrauen}, bounding_box={self.bounding_box})"
 
 
-# Beispielverwendung
+# Verwendung
 if __name__ == "__main__":
     try:
-        # 1. Objekte aus Textdatei parsen
-        with open('objekte.txt') as file:
+        # 1. Objekte laden
+        with open(r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\objekte.txt') as file:
             objekte = Objekt.parse_text_to_objects(file.read())
 
         # 2. Buchstaben zuweisen
         Objekt.assign_letters(objekte)
 
-        # 3. Auf Bild zeichnen
-        Objekt.draw_objects_on_image(
-            "eingabe.jpg",
-            objekte,
-            "ausgabe/resultat.jpg"
-        )
-
-        # 4. Ergebnisse anzeigen
-        for obj in objekte:
-            print(obj)
-
-    except Exception as e:
-        print(f"Fehler: {str(e)}")
-# Verwendung
-if __name__ == "__main__":
-    try:
-        with open(r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\objekte.txt') as file:
-            text = file.read()
-
-        objekte = Objekt.parse_text_to_objects(text)
-        Objekt.assign_letters(objekte)
-
+        # 3. Objekte ausgeben
         for obj in objekte:
             print(obj)
 
 
+        # 4. Adjazenzmatrix erstellen
+        connection_img_path = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\bearbeitet_Test2.jpg"
+        adj_matrix, matrix_buchstaben = Objekt.create_adjacency_matrix(objekte, connection_img_path)
+
+        # 5. Bild markieren
+        img_path = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\bearbeitet_Test2.jpg"
+        output_path = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\Bild_markiert.jpg"
+        Objekt.draw_objects_on_image(img_path, objekte, output_path)
+
+        print("\nAdjazenzmatrix:")
+        print("   " + " ".join(matrix_buchstaben))
+        for i, row in enumerate(adj_matrix):
+            print(f"{matrix_buchstaben[i]} {list(row)}")
+
     except Exception as e:
         print(f"Fehler: {str(e)}")
-
-    img_path = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\bearbeitet_Test2.jpg"
-    Objekt.draw_objects_on_image(img_path, objekte,
-                                 r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\Bild_markiert.jpg")
