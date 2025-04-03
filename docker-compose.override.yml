@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  admin:
+    build: ./src/robot/admin
+    container_name: admin
+    image: local-robot-admin:dev
+    ports:
+      - "8001:8001"
+    # 🔥 no devices defined here — this overrides and removes it
+    stdin_open: true
+    tty: true
+
+  calculate-route:
+    build: ./src/robot/calculate-route
+    container_name: calculate-route
+    image: local-robot-calculate-route:dev
+    ports:
+      - "8000:8000"
