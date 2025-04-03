@@ -25,7 +25,7 @@ jobs:
       - name: Build and push admin image
         uses: docker/build-push-action@v5
         with:
-          context: ./admin
+          context: ./src/robot/admin
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/robot-admin:latest
             ${{ secrets.DOCKER_USERNAME }}/robot-admin:${{ github.ref_name }}
@@ -34,7 +34,7 @@ jobs:
       - name: Build and push calculate-route image
         uses: docker/build-push-action@v5
         with:
-          context: ./calculate-route
+          context: ./src/robot/calculate-route
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/robot-calculate-route:latest
             ${{ secrets.DOCKER_USERNAME }}/robot-calculate-route:${{ github.ref_name }}
