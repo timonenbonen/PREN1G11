@@ -39,7 +39,7 @@ class Objekt:
         return self.vertrauen >= schwellenwert
 
     @staticmethod
-    def create_adjacency_matrix(objekte_liste, connection_image_path, connection_threshold=0.2, bar_width=40):
+    def create_adjacency_matrix(objekte_liste, connection_image_path, connection_threshold=0.15, bar_width=10):
         """Erstellt eine Adjazenzmatrix mit Analyse eines breiten Balkens zwischen Punkten."""
         # Buchstaben-Liste für das Original-Schema
         buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
