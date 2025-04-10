@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   admin:
-    image: ${DOCKER_USERNAME}/robot-admin:${ROBOT_VERSION}  # or v1.0.0
+    image: ${DOCKER_USERNAME}/robot-admin:${ROBOT_VERSION}
     container_name: admin
     ports:
       - "8001:8001"
@@ -13,8 +13,19 @@ services:
     tty: true
 
   calculate-route:
-    image: ${DOCKER_USERNAME}/robot-calculate-route:latest  # or v1.0.0
+    image: ${DOCKER_USERNAME}/robot-calculate-route:latest
     container_name: calculate-route
     ports:
       - "8000:8000"
+    devices:
+      - "/dev/video0:/dev/video0"
+    restart: unless-stopped
+
+  log-server:
+    image: ${DOCKER_USERNAME}/robot-log-server:latest
+    container_name: log-server
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./logs:/logs
     restart: unless-stopped

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Response
-from communication import calculate_route, send_uart_command
+from communication import calculate_route, send_uart_command, log_event
 from output_handler import signal_arrival, signal_error
 import requests
 
@@ -12,22 +12,29 @@ status = "idle"  # global robot state
 def run_robot():
     global status
     status = "running"
+    log_event("admin", "INFO", "Run triggered")
 
     try:
-        result = calculate_route()
+        result, path = calculate_route()
+        log_event("admin", "INFO", "Route calculation result", {"status": result, "path": path})
 
         if result == "valid":
             send_uart_command("DRIVE")
+            log_event("admin", "INFO", "Sent DRIVE command to UART")
         else:
             send_uart_command("TURN")
             signal_error()
+            log_event("admin", "WARNING", "Sent TURN command due to invalid route")
 
         signal_arrival()
+        log_event("admin", "INFO", "Arrival signaled")
+
         status = "done"
         return {"status": "success", "result": result}
 
     except Exception as e:
         status = "error"
+        log_event("admin", "ERROR", "Exception during run", {"error": str(e)})
         return {"status": "error", "message": str(e)}
 
 

@@ -9,10 +9,10 @@ def main():
     if input_handler.wait_for_start_button():
         print("Starting run process...")
 
-        route_status = communication.calculate_route()
+        route_status, path = communication.calculate_route()
 
         if route_status == "valid":
-            communication.send_uart_command("DRIVE")
+            communication.send_uart_command(f"DRIVE:{path}")
         else:
             communication.send_uart_command("TURN")
             output_handler.signal_error()
