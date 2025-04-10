@@ -417,7 +417,7 @@ class Objekt:
 if __name__ == "__main__":
     try:
         # 1. Objekte laden
-        with open(r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\objekte.txt') as file:
+        with open(r'/src/utils/tests/Bilder/Bodenlinien/objekte1.txt') as file:
             objekte = Objekt.parse_text_to_objects(file.read())
 
         # 2. Buchstaben zuweisen
@@ -429,12 +429,12 @@ if __name__ == "__main__":
 
 
         # 4. Adjazenzmatrix erstellen
-        connection_img_path = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\bearbeitet_Test2.jpg"
+        connection_img_path = r"/src/utils/tests/Bilder/Bodenlinien/bild1.jpg"
         adj_matrix, matrix_buchstaben = Objekt.create_adjacency_matrix(objekte, connection_img_path)
 
         # 5. Bild markieren
-        img_path = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\bearbeitet_Test2.jpg"
-        output_path = r"C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\Bild_markiert.jpg"
+        img_path = r"/src/utils/tests/Bilder/Bodenlinien/bild1.jpg"
+        output_path = r"/src/utils/tests/Bilder/Bodenlinien/Bild_markiert.jpg"
         Objekt.draw_objects_on_image(img_path, objekte, output_path)
 
         print("\nAdjazenzmatrix:")

@@ -8,7 +8,6 @@ from ultralytics import YOLO
 import threading
 import numpy as np
 
-from src.utils.tests.Bilder.main.main import detect_objects
 
 
 class Objekt:
@@ -86,9 +85,9 @@ class YoloDetectorApp:
         self.root.geometry("1200x800")
 
         # Standardpfade
-        self.model_path = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\YoloModells\model=yolov8npt epochs=100 imgsz=640\my_model.pt'
+        self.model_path = r'/src/utils/tests/YoloModells/model=yolov8npt epochs=100 imgsz=640/my_model.pt'
         self.image_folder = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\MusterBoden'
-        self.output_file = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\Bodenlinien\objekte.txt'  # Pfad zur Ausgabedatei
+        self.output_file = r'/src/utils/tests/Bilder/Bodenlinien/objekte1.txt'  # Pfad zur Ausgabedatei
         self.threshold = 10  # In Prozent (10 = 0.1)
 
         # Variablen
@@ -381,15 +380,27 @@ class YoloDetectorApp:
             self.status_var.set("Keine Objekte zum Speichern vorhanden.")
             return
 
+        # Determine the next available filename
+        base_name = "objekte"
+        extension = ".txt"
+        counter = 1
+        output_file = f"{base_name}{counter}{extension}"
+
+        # Find the next available filename
+        while os.path.exists(output_file):
+            counter += 1
+            output_file = f"{base_name}{counter}{extension}"
+
         try:
-            with open(self.output_file, 'w') as f:
+            with open(output_file, 'w') as f:
                 for obj in self.detected_objects:
                     print(f"DEBUG: Objekt {obj.klasse} - Buchstabe: {obj.buchstabe}")  # Debug
                     line = f"{obj.klasse};{obj.vertrauen:.1f}%;{obj.bounding_box};{obj.flaeche};{obj.zentrum};{obj.buchstabe if obj.buchstabe else ''}\n"
                     f.write(line)
 
             self.status_var.set(
-                f"{len(self.detected_objects)} Objekte gespeichert: {os.path.basename(self.output_file)}")
+                f"{len(self.detected_objects)} Objekte gespeichert: {os.path.basename(output_file)}")
+            self.output_file = output_file  # Update the current output file
         except Exception as e:
             self.status_var.set(f"Fehler beim Speichern: {str(e)}")
 
