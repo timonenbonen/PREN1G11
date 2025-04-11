@@ -17,7 +17,7 @@ def log_event(source, level, message, payload=None):
 
 def capture_image():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    image_path = f"{IMAGE_DIR}/capture_{timestamp}.jpg"
+    image_path = os.path.join(IMAGE_DIR, f"capture_{timestamp}.jpg")
 
     cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
@@ -32,7 +32,7 @@ def capture_image():
     for _ in range(15):
         cap.read()
 
-    time.sleep(0.5)  # Allow autofocus to settle
+    time.sleep(0.2)  # Allow autofocus to settle
 
     ret, frame = cap.read()
     cap.release()

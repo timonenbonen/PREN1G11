@@ -23,5 +23,9 @@ def calculate_route():
 
 @app.get("/take_picture")
 def take_picture():
-    image_path = capture_image()  # returns something like "captured.jpg"
-    return FileResponse(image_path, media_type="image/jpeg", filename="captured.jpg")
+    image_path = capture_image()
+    return FileResponse(
+        path=image_path,
+        media_type="image/jpeg",
+        filename=os.path.basename(image_path)
+    )
