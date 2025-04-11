@@ -5,7 +5,7 @@ from datetime import datetime
 
 def calculate_route():
     try:
-        response = requests.post("http://calculate-route:8000/calculate", timeout=10)
+        response = requests.post("http://host.docker.internal:8000/take_picture", timeout=10)
         response.raise_for_status()
         data = response.json()
         print(f"[Communication] Route API response: {data}")
