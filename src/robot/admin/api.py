@@ -67,21 +67,23 @@ def testrun(req: TestRunRequest):
 
     if option == "A":
         send_uart_command("TURNL")
-        time.sleep(20)
+        time.sleep(2)
         send_uart_command("STOP")
+        time.sleep(2)
         send_uart_command("DRIVE")
-        time.sleep(20)
+        time.sleep(2)
         send_uart_command("STOP")
     elif option == "B":
         send_uart_command("DRIVE")
-        time.sleep(20)
+        time.sleep(2)
         send_uart_command("STOP")
     elif option == "C":
-        send_uart_command("RTURN")
-        time.sleep(20)
+        send_uart_command("TURNR")
+        time.sleep(2)
         send_uart_command("STOP")
+        time.sleep(2)
         send_uart_command("DRIVE")
-        time.sleep(20)
+        time.sleep(2)
         send_uart_command("STOP")
     else:
         return {"status": "error", "message": f"Unknown option '{option}'"}
