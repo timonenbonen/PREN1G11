@@ -27,6 +27,12 @@ services:
     devices:
       - /dev/vchiq:/dev/vchiq
       - /dev/video0:/dev/video0
+      - /dev/media0:/dev/media0
+      - /dev/media1:/dev/media1
+      - /dev/media2:/dev/media2
+      - /dev/media3:/dev/media3
+      - /dev/media4:/dev/media4
+      - /dev/dri:/dev/dri
     restart: unless-stopped
 
   log-server:
