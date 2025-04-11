@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import os
 import requests
+import subprocess
 
 IMAGE_DIR = "/app/images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
