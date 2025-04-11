@@ -3,6 +3,7 @@ from communication import calculate_route, send_uart_command, log_event
 from output_handler import signal_arrival, signal_error
 import requests
 from pydantic import BaseModel
+import time
 
 class TestRunRequest(BaseModel):
     option: str
