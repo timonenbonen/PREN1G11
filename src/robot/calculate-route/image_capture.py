@@ -29,6 +29,7 @@ def capture_image():
             "-o", image_path,
             "--width", "4608",
             "--height", "2592",
+            "--nopreview",
             "-t", "1"
         ], check=True)
     except subprocess.CalledProcessError as e:
