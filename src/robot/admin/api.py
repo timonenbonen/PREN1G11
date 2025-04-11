@@ -45,7 +45,7 @@ def get_status():
 @app.get("/test-picture")
 def test_picture():
     try:
-        resp = requests.get("http://calculate-route:8000/take_picture", timeout=10)
+        resp = requests.get("http://host.docker.internal:8000/take_picture", timeout=10)
         resp.raise_for_status()
 
         return Response(
