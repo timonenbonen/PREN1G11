@@ -40,10 +40,16 @@ def capture_image():
     ret, frame = cap.read()
     cap.release()
 
-    if not ret:
+    print(f"[DEBUG] ret={ret}, frame is None: {frame is None}")
+    if frame is not None:
+        print(f"[DEBUG] frame.shape: {frame.shape}")
+
+    if not ret or frame is None:
         raise RuntimeError("Failed to capture image.")
 
-    cv2.imwrite(image_path, frame)
+    success = cv2.imwrite(image_path, frame)
+    if not success:
+        raise RuntimeError(f"Failed to write image to {image_path}")
 
     log_event(
         source="calculate-route",
