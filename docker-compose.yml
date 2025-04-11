@@ -18,6 +18,7 @@ services:
     container_name: calculate-route
     volumes:
       - ./images:/app/images
+      - /usr/bin/libcamera-jpeg:/usr/bin/libcamera-jpeg
     ports:
       - "8000:8000"
     privileged: true

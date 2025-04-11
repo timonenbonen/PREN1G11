@@ -25,7 +25,7 @@ def capture_image():
 
     try:
         subprocess.run([
-            "libcamera-jpeg",
+            "/usr/bin/libcamera-jpeg",
             "-o", image_path,
             "--width", "4608",
             "--height", "2592",
