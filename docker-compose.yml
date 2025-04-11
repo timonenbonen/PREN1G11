@@ -2,6 +2,8 @@ version: "3.8"
 
 services:
   admin:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     image: ${DOCKER_USERNAME}/robot-admin:${ROBOT_VERSION}
     container_name: admin
     ports:
