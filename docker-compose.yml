@@ -19,6 +19,8 @@ services:
     volumes:
       - ./images:/app/images
       - /usr/bin/libcamera-jpeg:/usr/bin/libcamera-jpeg
+      - /lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu
+      - /usr/lib/aarch64-linux-gnu:/usr/lib/aarch64-linux-gnu
     ports:
       - "8000:8000"
     privileged: true
