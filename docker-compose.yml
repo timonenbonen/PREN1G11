@@ -17,6 +17,7 @@ services:
     container_name: calculate-route
     ports:
       - "8000:8000"
+    privileged: true
     devices:
       - "/dev/video0:/dev/video0"
     restart: unless-stopped
