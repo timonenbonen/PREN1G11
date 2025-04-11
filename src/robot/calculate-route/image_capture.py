@@ -4,6 +4,9 @@ from datetime import datetime
 import os
 import requests
 
+IMAGE_DIR = "/app/images"
+os.makedirs(IMAGE_DIR, exist_ok=True)
+
 def log_event(source, level, message, payload=None):
     try:
         requests.post("http://log-server:9000/log", json={
