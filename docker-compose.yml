@@ -13,7 +13,8 @@ services:
     tty: true
 
   calculate-route:
-    image: ${DOCKER_USERNAME}/robot-calculate-route:latest
+    build:
+      context: ./src/robot/calculate-route  # 👈 Build locally on the Pi
     container_name: calculate-route
     volumes:
       - ./images:/app/images

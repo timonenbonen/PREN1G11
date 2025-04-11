@@ -32,16 +32,6 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/robot-admin:${{ github.ref_name }}
           push: true
 
-      - name: Build and push calculate-route image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./src/robot/calculate-route
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/robot-calculate-route:latest
-            ${{ secrets.DOCKER_USERNAME }}/robot-calculate-route:${{ github.ref_name }}
-          push: true
-
       - name: Build and push log-server image
         uses: docker/build-push-action@v5
         with:
