@@ -2,7 +2,10 @@ from fastapi import FastAPI, Response
 from communication import calculate_route, send_uart_command, log_event
 from output_handler import signal_arrival, signal_error
 import requests
+from pydantic import BaseModel
 
+class TestRunRequest(BaseModel):
+    option: str
 
 app = FastAPI()
 status = "idle"  # global robot state
