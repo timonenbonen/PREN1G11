@@ -22,7 +22,7 @@ def capture_image():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     image_path = os.path.join(IMAGE_DIR, f"capture_{timestamp}.jpg")
 
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
         raise RuntimeError("Could not open camera.")
