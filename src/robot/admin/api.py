@@ -66,7 +66,9 @@ def testrun(req: TestRunRequest):
     option = req.option.upper()
 
     if option == "A":
-        send_uart_command("LTURN")
+        send_uart_command("TURNL")
+        time.sleep(2)
+        send_uart_command("STOP")
         send_uart_command("DRIVE")
         time.sleep(2)
         send_uart_command("STOP")
@@ -76,6 +78,8 @@ def testrun(req: TestRunRequest):
         send_uart_command("STOP")
     elif option == "C":
         send_uart_command("RTURN")
+        time.sleep(2)
+        send_uart_command("STOP")
         send_uart_command("DRIVE")
         time.sleep(2)
         send_uart_command("STOP")
