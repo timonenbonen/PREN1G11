@@ -6,7 +6,7 @@ import requests
 
 app = FastAPI()
 status = "idle"  # global robot state
-
+option: str
 
 @app.post("/run")
 def run_robot():
@@ -55,3 +55,27 @@ def test_picture():
 
     except requests.RequestException as e:
         return {"error": f"Could not get picture: {e}"}
+
+
+@app.post("/testrun")
+def testrun(req: TestRunRequest):
+    option = req.option.upper()
+
+    if option == "A":
+        send_uart_command("LTURN")
+        send_uart_command("DRIVE")
+        time.sleep(2)
+        send_uart_command("STOP")
+    elif option == "B":
+        send_uart_command("DRIVE")
+        time.sleep(2)
+        send_uart_command("STOP")
+    elif option == "C":
+        send_uart_command("RTURN")
+        send_uart_command("DRIVE")
+        time.sleep(2)
+        send_uart_command("STOP")
+    else:
+        return {"status": "error", "message": f"Unknown option '{option}'"}
+
+    return {"status": "success", "executed": option}
