@@ -71,11 +71,11 @@ def testrun(req: TestRunRequest):
         send_uart_command("STOP")
         time.sleep(2)
         send_uart_command("TURNR")
-        time.sleep(2)
+        time.sleep(1)
         send_uart_command("STOP")
         time.sleep(2)
         send_uart_command("TURNL")
-        time.sleep(2)
+        time.sleep(1)
         send_uart_command("STOP")
     elif option == "B":
         send_uart_command("DRIVE")
