@@ -15,11 +15,11 @@ def calculate_route():
         return "error", []
 
 def send_uart_command(command):
-    if command not in ["TURN", "DRIVE", "STOP"]:
-        print(f"[Communication] Invalid command: {command}")
-        return
+    #if command not in ["TURN", "DRIVE", "STOP", ]:
+      #  print(f"[Communication] Invalid command: {command}")
+       # return
 
-    print(f"[Communication] Sending UART command: {command}")
+    #print(f"[Communication] Sending UART command: {command}")
     try:
         ser = serial.Serial("/dev/serial0", 9600, timeout=1)
         ser.write((command + "\n").encode())  # Optional newline for microcontroller parsing
