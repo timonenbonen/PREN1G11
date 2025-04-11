@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import os
 import json
+from typing import Optional
 
 app = FastAPI()
 
