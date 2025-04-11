@@ -4,6 +4,7 @@ from image_recognition import recognize_objects
 from path_calculation import calculate_path
 from fastapi.responses import FileResponse
 import requests
+import os
 
 app = FastAPI()
 
