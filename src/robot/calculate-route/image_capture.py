@@ -22,40 +22,29 @@ def capture_image():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     image_path = os.path.join(IMAGE_DIR, f"capture_{timestamp}.jpg")
 
-    cap = cv2.VideoCapture(0)
+    try:
+        subprocess.run([
+            "libcamera-jpeg",
+            "-o", image_path,
+            "--width", "4608",
+            "--height", "2592",
+            "-t", "1"
+        ], check=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"libcamera-jpeg failed: {e}")
 
-    if not cap.isOpened():
-        raise RuntimeError("Could not open camera.")
-
-    # Set full resolution supported by Camera Module 3
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 4608)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 2592)
-
-    # Warm up (autofocus, exposure)
-    for _ in range(15):
-        cap.read()
-
-    time.sleep(0.2)  # Allow autofocus to settle
-
-    ret, frame = cap.read()
-    cap.release()
-
-    print(f"[DEBUG] ret={ret}, frame is None: {frame is None}")
-    if frame is not None:
-        print(f"[DEBUG] frame.shape: {frame.shape}")
-
-    if not ret or frame is None:
-        raise RuntimeError("Failed to capture image.")
-
-    success = cv2.imwrite(image_path, frame)
-    if not success:
-        raise RuntimeError(f"Failed to write image to {image_path}")
+    frame = cv2.imread(image_path)
+    if frame is None:
+        raise RuntimeError("Failed to read image with OpenCV.")
 
     log_event(
         source="calculate-route",
         level="INFO",
         message="Image captured",
-        payload={"filename": os.path.basename(image_path), "resolution": f"{frame.shape[1]}x{frame.shape[0]}"}
+        payload={
+            "filename": os.path.basename(image_path),
+            "resolution": f"{frame.shape[1]}x{frame.shape[0]}"
+        }
     )
 
     return image_path
