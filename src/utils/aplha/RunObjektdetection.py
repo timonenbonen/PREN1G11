@@ -1,6 +1,6 @@
 from src.utils.aplha.treeMatrix import TreeMatrix
 
-matrix = TreeMatrix("pfad/zu/objekte1.txt")
+matrix = TreeMatrix("pfad/zu/objekte_D.txt")
 alle_objekte = matrix.get_alle_objekte()
 
 # Beispiel: Vertrauenswürdige Punkte ausgeben

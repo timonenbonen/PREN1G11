@@ -509,10 +509,10 @@ def main():
     dataset_pfad = os.path.abspath("Dataset")
 
     # Eingabedateien
-    objekte1_datei = os.path.join(dataset_pfad, "objekte1.txt")
-    bild1_datei = os.path.join(dataset_pfad, "bild1.jpg")
-    objekte2_datei = os.path.join(dataset_pfad, "objekte2.txt")
-    bild2_datei = os.path.join(dataset_pfad, "bild2.jpg")
+    objekte1_datei = os.path.join(dataset_pfad, "objekte_D.txt")
+    bild1_datei = os.path.join(dataset_pfad, "bildE.jpg")
+    objekte2_datei = os.path.join(dataset_pfad, "objekte_G.txt")
+    bild2_datei = os.path.join(dataset_pfad, "bildF.jpg")
 
     # Ausgabedateien
     objekte_beschriftet_datei = os.path.join(dataset_pfad, "objekte_beschriftet.txt")

@@ -87,7 +87,7 @@ class YoloDetectorApp:
         # Standardpfade
         self.model_path = r'/src/utils/tests/YoloModells/model=yolov8npt epochs=100 imgsz=640/my_model.pt'
         self.image_folder = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\tests\Bilder\MusterBoden'
-        self.output_file = r'/src/utils/tests/Bilder/Bodenlinien/objekte1.txt'  # Pfad zur Ausgabedatei
+        self.output_file = r'/src/utils/tests/Bilder/Bodenlinien/objekte_D.txt'  # Pfad zur Ausgabedatei
         self.threshold = 10  # In Prozent (10 = 0.1)
 
         # Variablen

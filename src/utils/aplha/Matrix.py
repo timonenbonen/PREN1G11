@@ -149,7 +149,51 @@ class Objekt:
 
         return adjacency_matrix, vorhandene_buchstaben
 
+    @staticmethod
+    def find_wall(objekte_liste, adjacency_matrix, matrix_buchstaben):
+        """
+        Gibt eine Matrix zurück mit:
+        0 = keine Verbindung
+        1 = Verbindung ohne Wall
+        2 = Verbindung mit Wall
+        """
+        walls = [obj for obj in objekte_liste if obj.klasse == "wall"]
+        punkte = {obj.buchstabe: obj for obj in objekte_liste if obj.buchstabe in matrix_buchstaben}
 
+        erweiterte_matrix = np.copy(adjacency_matrix)
+
+        for i, b1 in enumerate(matrix_buchstaben):
+            for j, b2 in enumerate(matrix_buchstaben):
+                if i >= j or adjacency_matrix[i][j] != 1:
+                    continue
+
+                p1 = np.array(punkte[b1].zentrum)
+                p2 = np.array(punkte[b2].zentrum)
+
+                # Prüfe, ob irgendein Wall die Linie p1-p2 schneidet
+                for wall in walls:
+                    wx1, wy1, wx2, wy2 = wall.bounding_box
+                    wall_bbox = [(wx1, wy1), (wx2, wy1), (wx2, wy2), (wx1, wy2)]
+                    wall_edges = list(zip(wall_bbox, wall_bbox[1:] + [wall_bbox[0]]))
+
+                    for w_start, w_end in wall_edges:
+                        if Objekt._linien_schneiden(p1, p2, np.array(w_start), np.array(w_end)):
+                            erweiterte_matrix[i][j] = 2
+                            erweiterte_matrix[j][i] = 2
+                            break
+                    if erweiterte_matrix[i][j] == 2:
+                        break
+
+        return erweiterte_matrix
+
+    @staticmethod
+    def _linien_schneiden(p1, p2, q1, q2):
+        """Hilfsmethode: prüft, ob zwei Liniensegmente sich schneiden"""
+
+        def ccw(a, b, c):
+            return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0])
+
+        return (ccw(p1, q1, q2) != ccw(p2, q1, q2)) and (ccw(p1, p2, q1) != ccw(p1, p2, q2))
 
     @staticmethod
     def parse_text_to_objects(text):
@@ -183,79 +227,225 @@ class Objekt:
         return objekte
 
     @classmethod
-    def assign_letters(cls, objekte_liste):
+    def assignment_E(cls, objekte_liste):
         """
-        Finale Zuordnungslogik:
-        1. Filtere nur Punkte und Barrieren (ignoriere Wände)
-        2. Oberstes Objekt (Punkt/Barriere) wird B
-        3. Nächste 3 Objekte: A (links), H (mitte), C (rechts)
-        4. Rest bleibt unmarkiert
+        Zuordnungslogik für E, D, F und G:
+        1. E - unterster Punkt
+        2. Die nächsten 3 untersten Punkte werden nach X-Position sortiert und zugewiesen:
+           - F (links)
+           - G (mitte)
+           - D (rechts)
+        3. Gibt eine Liste der erkannten Punkte zurück
         """
         if not objekte_liste:
-            return
+            return []
 
-        # 1. Filtere nur Punkte und Barrieren (keine Wände)
+        # Liste für erkannte Punkte erstellen
+        erkannte_punkte = []
+
+        # Relevante Objekte (nur Punkte und Barrieren)
         relevante_objekte = [
             obj for obj in objekte_liste
             if obj.klasse in ['point', 'pointa', 'pointb', 'pointc', 'barrier']
         ]
 
-        # 2. Sortiere nach Y (aufsteigend) und X (aufsteigend)
-        sorted_objekte = sorted(relevante_objekte,
-                                key=lambda obj: (obj.zentrum[1], obj.zentrum[0]))
+        # Nach Y-Position sortieren (absteigend, unterster zuerst)
+        sortierte_objekte = sorted(relevante_objekte,
+                                   key=lambda obj: obj.zentrum[1],
+                                   reverse=True)
 
-        # 3. Oberstes Objekt als B markieren (falls nicht wall und kein Buchstabe)
-        if len(sorted_objekte) > 0 and not sorted_objekte[0].buchstabe:
-            sorted_objekte[0].set_buchstabe('B')
+        # 1. E - unterster Punkt
+        if sortierte_objekte:
+            unterster = sortierte_objekte[0]
+            unterster.set_buchstabe('E')
+            erkannte_punkte.append(unterster)
 
-        # 4. Nächste 3 Objekte als A, H, C markieren
-        if len(sorted_objekte) > 1:
-            next_objects = sorted(sorted_objekte[1:4],
-                                  key=lambda obj: obj.zentrum[0])  # Sortiere nur nach X
+        # 2. Die nächsten 3 untersten Punkte (ohne E)
+        naechste_drei = [obj for obj in sortierte_objekte[1:] if obj not in erkannte_punkte][:3]
 
-            # Linkestes -> A
-            if len(next_objects) > 0 and not next_objects[0].buchstabe:
-                next_objects[0].set_buchstabe('A')
+        # Nach X-Position sortieren (aufsteigend)
+        if naechste_drei:
+            naechste_drei.sort(key=lambda obj: obj.zentrum[0])
 
-            # Mittleres -> H (falls genau 3 Objekte)
-            if len(next_objects) >= 3 and not next_objects[1].buchstabe:
-                next_objects[1].set_buchstabe('H')
+            # F - Links
+            if len(naechste_drei) >= 1:
+                naechste_drei[0].set_buchstabe('F')
+                erkannte_punkte.append(naechste_drei[0])
 
-            # Rechtsestes -> C
-            if len(next_objects) >= 2 and not next_objects[-1].buchstabe:
-                next_objects[-1].set_buchstabe('C')
+            # G - Mitte
+            if len(naechste_drei) >= 2:
+                if len(naechste_drei) == 2:
+                    # Bei nur zwei Punkten: den zweiten auf D setzen
+                    naechste_drei[1].set_buchstabe('D')
+                    erkannte_punkte.append(naechste_drei[1])
+                else:
+                    # Bei drei Punkten: den mittleren auf G setzen
+                    naechste_drei[1].set_buchstabe('G')
+                    erkannte_punkte.append(naechste_drei[1])
 
-            # 3. Normale Zuordnung für den Rest (E, G, D, F)
-            # E - unterster Punkt
-            point_objekte = [obj for obj in objekte_liste if obj.klasse == 'point']
-            if point_objekte:
-                unterster = max(point_objekte, key=lambda obj: obj.zentrum[1])
-                if not unterster.buchstabe:
-                    unterster.set_buchstabe('E')
+            # D - Rechts
+            if len(naechste_drei) >= 3:
+                naechste_drei[2].set_buchstabe('D')
+                erkannte_punkte.append(naechste_drei[2])
 
-            # G - nächstes Objekt zu E
-            e_obj = next((obj for obj in objekte_liste if getattr(obj, 'buchstabe', None) == 'E'), None)
-            if e_obj:
-                freie_objekte = [obj for obj in objekte_liste
-                                 if not getattr(obj, 'buchstabe', None) and obj != e_obj]
-                if freie_objekte:
-                    g_obj = min(freie_objekte,
-                                key=lambda obj: abs(obj.zentrum[0] - e_obj.zentrum[0]))
-                    g_obj.set_buchstabe('G')
+        # Konsistenzprüfung
+        buchstaben = [getattr(obj, 'buchstabe', None) for obj in erkannte_punkte]
+        if len([b for b in buchstaben if b]) != len(set(b for b in buchstaben if b)):
+            print("Warnung: Doppelte Buchstaben erkannt!")
 
-            # D/F - übrige Punkte
-            freie = [obj for obj in objekte_liste if not getattr(obj, 'buchstabe', None)]
-            if len(freie) == 1:
-                freie[0].set_buchstabe('D')
-            elif len(freie) >= 2:
-                freie.sort(key=lambda obj: obj.zentrum[0])  # Sort by X
-                freie[0].set_buchstabe('F')
-                freie[-1].set_buchstabe('D')
+        return erkannte_punkte
 
-            # Konsistenzprüfung
-            buchstaben = [getattr(obj, 'buchstabe', None) for obj in objekte_liste]
-            if len([b for b in buchstaben if b]) != len(set(b for b in buchstaben if b)):
-                print("Warnung: Doppelte Buchstaben erkannt!")
+    @classmethod
+    def assignment_F(cls, objekte_liste):
+        """
+        Zuordnungslogik für F, A, H und G:
+        1. F - Punkt, der am nächsten zur Mitte des unteren Bildrandes ist
+        2. Die untersten drei Punkte werden nach X-Position sortiert und zugewiesen:
+           - A (links)
+           - H (mitte)
+           - G (rechts)
+        3. Gibt eine Liste der erkannten Punkte zurück
+        """
+        if not objekte_liste:
+            return []
+
+        # Liste für erkannte Punkte erstellen
+        erkannte_punkte = []
+
+        # Relevante Objekte (nur Punkte und Barrieren)
+        relevante_objekte = [
+            obj for obj in objekte_liste
+            if obj.klasse in ['point', 'pointa', 'pointb', 'pointc', 'barrier']
+        ]
+
+        # Wenn keine Objekte gefunden wurden, leere Liste zurückgeben
+        if not relevante_objekte:
+            return []
+
+        # Bildgröße abschätzen (maximale Koordinaten als Näherung)
+        max_x = max(obj.bounding_box[2] for obj in relevante_objekte)
+        max_y = max(obj.bounding_box[3] for obj in relevante_objekte)
+
+        # 1. F - Punkt am nächsten zur Mitte des unteren Bildrands
+        unterer_bildrand_mitte = (max_x / 2, max_y)
+
+        # Nehme den Punkt mit der kleinsten Distanz zur Bildmitte unten
+        f_punkt = min(relevante_objekte,
+                      key=lambda obj: ((obj.zentrum[0] - unterer_bildrand_mitte[0]) ** 2 +
+                                       (obj.zentrum[1] - unterer_bildrand_mitte[1]) ** 2) ** 0.5)
+        f_punkt.set_buchstabe('F')
+        erkannte_punkte.append(f_punkt)
+
+        # 2. Die drei untersten Punkte (ohne F)
+        unterste_punkte = [obj for obj in relevante_objekte if obj != f_punkt]
+        unterste_punkte.sort(key=lambda obj: obj.zentrum[1], reverse=True)  # Nach Y absteigend (unterste zuerst)
+        unterste_drei = unterste_punkte[:3]
+
+        # Nach X-Position sortieren (aufsteigend)
+        if unterste_drei:
+            unterste_drei.sort(key=lambda obj: obj.zentrum[0])
+
+            # A - Links
+            if len(unterste_drei) >= 1:
+                unterste_drei[0].set_buchstabe('A')
+                erkannte_punkte.append(unterste_drei[0])
+
+            # H - Mitte
+            if len(unterste_drei) >= 2:
+                if len(unterste_drei) == 2:
+                    # Bei nur zwei Punkten: den zweiten auf G setzen
+                    unterste_drei[1].set_buchstabe('G')
+                    erkannte_punkte.append(unterste_drei[1])
+                else:
+                    # Bei drei Punkten: den mittleren auf H setzen
+                    unterste_drei[1].set_buchstabe('H')
+                    erkannte_punkte.append(unterste_drei[1])
+
+            # G - Rechts
+            if len(unterste_drei) >= 3:
+                unterste_drei[2].set_buchstabe('G')
+                erkannte_punkte.append(unterste_drei[2])
+
+        # Konsistenzprüfung
+        buchstaben = [getattr(obj, 'buchstabe', None) for obj in erkannte_punkte]
+        if len([b for b in buchstaben if b]) != len(set(b for b in buchstaben if b)):
+            print("Warnung: Doppelte Buchstaben erkannt!")
+
+        return erkannte_punkte
+
+    @classmethod
+    def assignment_G(cls, objekte_liste):
+        """
+        Zuordnungslogik für G und H:
+        1. G - Unterster Punkt von den Punkten, die am nächsten zur vertikalen Mittellinie des Bildes sind.
+        2. H - Punkt, der am nächsten zu G ist.
+        3. Danach: Punkte mit Klassen pointa, pointb und pointc werden zu A, B, C zugewiesen.
+        4. Gibt eine Liste der erkannten Punkte zurück.
+        """
+        if not objekte_liste:
+            return []
+
+        erkannte_punkte = []
+
+        relevante_objekte = [
+            obj for obj in objekte_liste
+            if obj.klasse in ['point', 'pointa', 'pointb', 'pointc', 'barrier']
+        ]
+
+        if not relevante_objekte:
+            return []
+
+        max_x = max(obj.bounding_box[2] for obj in relevante_objekte)
+        vertikale_mittellinie_x = max_x / 2
+
+        # Nur Punkte, die noch keinen Buchstaben haben
+        verfuegbare_punkte = relevante_objekte.copy()
+
+        # Berechne Abstand zur Mittellinie
+        for obj in verfuegbare_punkte:
+            obj.abstand_zur_mittellinie = abs(obj.zentrum[0] - vertikale_mittellinie_x)
+
+        # Sortiere nach Abstand zur Mittellinie
+        verfuegbare_punkte.sort(key=lambda obj: obj.abstand_zur_mittellinie)
+
+        nahe_punkte = verfuegbare_punkte[:min(len(verfuegbare_punkte), 3)]
+
+        if nahe_punkte:
+            g_punkt = max(nahe_punkte, key=lambda obj: obj.zentrum[1])
+            g_punkt.set_buchstabe('G')
+            erkannte_punkte.append(g_punkt)
+
+            verfuegbare_punkte.remove(g_punkt)
+
+            if verfuegbare_punkte:
+                h_punkt = min(
+                    verfuegbare_punkte,
+                    key=lambda obj: ((obj.zentrum[0] - g_punkt.zentrum[0]) ** 2 + (
+                                obj.zentrum[1] - g_punkt.zentrum[1]) ** 2) ** 0.5
+                )
+                h_punkt.set_buchstabe('H')
+                erkannte_punkte.append(h_punkt)
+
+                verfuegbare_punkte.remove(h_punkt)
+
+        # Danach: pointa, pointb, pointc zu A, B, C zuweisen
+        for obj in verfuegbare_punkte:
+            if obj.klasse == 'pointa':
+                obj.set_buchstabe('A')
+                erkannte_punkte.append(obj)
+            elif obj.klasse == 'pointb':
+                obj.set_buchstabe('B')
+                erkannte_punkte.append(obj)
+            elif obj.klasse == 'pointc':
+                obj.set_buchstabe('C')
+                erkannte_punkte.append(obj)
+
+        # Konsistenzprüfung
+        buchstaben = [getattr(obj, 'buchstabe', None) for obj in erkannte_punkte]
+        if len([b for b in buchstaben if b]) != len(set(b for b in buchstaben if b)):
+            print("Warnung: Doppelte Buchstaben erkannt!")
+
+        return erkannte_punkte
 
     @classmethod
     def draw_objects_on_image(cls, image_path, objekte_liste, output_path="output.jpg", bar_width=20):
@@ -412,35 +602,121 @@ class Objekt:
     def __repr__(self):
         return f"Objekt(klasse='{self.klasse}', vertrauen={self.vertrauen}, bounding_box={self.bounding_box})"
 
-
 # Verwendung
+# In the main section, replace your current code with:
+
 if __name__ == "__main__":
     try:
-        # 1. Objekte laden
-        with open(r'/src/utils/tests/Bilder/Bodenlinien/objekte1.txt') as file:
-            objekte = Objekt.parse_text_to_objects(file.read())
+        # === 1. Eingaben einlesen für E, F und G ===
+        base_dir = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\aplha\Dataset'
 
-        # 2. Buchstaben zuweisen
-        Objekt.assign_letters(objekte)
+        # Pfade für alle drei Szenarien definieren
+        objekte_paths = {
+            'E': os.path.join(base_dir, 'objekte_E.txt'),
+            'F': os.path.join(base_dir, 'objekte_F.txt'),
+            'G': os.path.join(base_dir, 'objekte_G.txt')
+        }
 
-        # 3. Objekte ausgeben
-        for obj in objekte:
-            print(obj)
+        img_paths = {
+            'E': os.path.join(base_dir, 'bildE.jpg'),
+            'F': os.path.join(base_dir, 'bildF.jpg'),
+            'G': os.path.join(base_dir, 'bildG.jpg')
+        }
 
+        # === 2. Verarbeitung für Szenario E ===
+        with open(objekte_paths['E']) as file:
+            objekte_E = Objekt.parse_text_to_objects(file.read())
 
-        # 4. Adjazenzmatrix erstellen
-        connection_img_path = r"/src/utils/tests/Bilder/Bodenlinien/bild1.jpg"
-        adj_matrix, matrix_buchstaben = Objekt.create_adjacency_matrix(objekte, connection_img_path)
+        erkannte_E = Objekt.assignment_E(objekte_E)
 
-        # 5. Bild markieren
-        img_path = r"/src/utils/tests/Bilder/Bodenlinien/bild1.jpg"
-        output_path = r"/src/utils/tests/Bilder/Bodenlinien/Bild_markiert.jpg"
-        Objekt.draw_objects_on_image(img_path, objekte, output_path)
+        # Matrix erstellen (nur Linien)
+        matrix_E, buchstaben_E = Objekt.create_adjacency_matrix(objekte_E, img_paths['E'])
 
-        print("\nAdjazenzmatrix:")
-        print("   " + " ".join(matrix_buchstaben))
-        for i, row in enumerate(adj_matrix):
-            print(f"{matrix_buchstaben[i]} {list(row)}")
+        print("\nMatrix nach Assignment E (nur Linien):")
+        print("   " + " ".join(buchstaben_E))
+        for i, row in enumerate(matrix_E):
+            print(f"{buchstaben_E[i]} {list(row)}")
+
+        # Walls prüfen
+        matrix_E_mit_walls = Objekt.find_wall(objekte_E, matrix_E, buchstaben_E)
+
+        print("\nMatrix nach Assignment E (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
+        print("   " + " ".join(buchstaben_E))
+        for i, row in enumerate(matrix_E_mit_walls):
+            print(f"{buchstaben_E[i]} {list(row)}")
+
+        # Ergebnisbild für E erstellen
+        output_path_E = os.path.join(base_dir, 'output_E.jpg')
+        Objekt.draw_objects_on_image(img_paths['E'], objekte_E, output_path_E)
+
+        # === 3. Verarbeitung für Szenario F ===
+        with open(objekte_paths['F']) as file:
+            objekte_F = Objekt.parse_text_to_objects(file.read())
+
+        erkannte_F = Objekt.assignment_F(objekte_F)
+
+        # Matrix erstellen (nur Linien)
+        matrix_F, buchstaben_F = Objekt.create_adjacency_matrix(objekte_F, img_paths['F'])
+
+        print("\nMatrix nach Assignment F (nur Linien):")
+        print("   " + " ".join(buchstaben_F))
+        for i, row in enumerate(matrix_F):
+            print(f"{buchstaben_F[i]} {list(row)}")
+
+        # Walls prüfen
+        matrix_F_mit_walls = Objekt.find_wall(objekte_F, matrix_F, buchstaben_F)
+
+        print("\nMatrix nach Assignment F (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
+        print("   " + " ".join(buchstaben_F))
+        for i, row in enumerate(matrix_F_mit_walls):
+            print(f"{buchstaben_F[i]} {list(row)}")
+
+        # Ergebnisbild für F erstellen
+        output_path_F = os.path.join(base_dir, 'output_F.jpg')
+        Objekt.draw_objects_on_image(img_paths['F'], objekte_F, output_path_F)
+
+        # === 4. NEU: Verarbeitung für Szenario G ===
+        with open(objekte_paths['G']) as file:
+            objekte_G = Objekt.parse_text_to_objects(file.read())
+
+        erkannte_G = Objekt.assignment_G(objekte_G)
+
+        # Matrix erstellen (nur Linien)
+        matrix_G, buchstaben_G = Objekt.create_adjacency_matrix(objekte_G, img_paths['G'])
+
+        print("\nMatrix nach Assignment G (nur Linien):")
+        print("   " + " ".join(buchstaben_G))
+        for i, row in enumerate(matrix_G):
+            print(f"{buchstaben_G[i]} {list(row)}")
+
+        # Walls prüfen
+        matrix_G_mit_walls = Objekt.find_wall(objekte_G, matrix_G, buchstaben_G)
+
+        print("\nMatrix nach Assignment G (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
+        print("   " + " ".join(buchstaben_G))
+        for i, row in enumerate(matrix_G_mit_walls):
+            print(f"{buchstaben_G[i]} {list(row)}")
+
+        # Ergebnisbild für G erstellen
+        output_path_G = os.path.join(base_dir, 'output_G.jpg')
+        Objekt.draw_objects_on_image(img_paths['G'], objekte_G, output_path_G)
+
+        # === 5. Finale Matrix mit kombinierten Punkten aus allen Szenarien ===
+        print("\nKombinierte Objekte aus allen Szenarien:")
+        alle_objekte = objekte_E + objekte_F + objekte_G
+        unique_objekte = {}
+        for obj in alle_objekte:
+            if obj.buchstabe and obj.buchstabe not in unique_objekte:
+                unique_objekte[obj.buchstabe] = obj
+        combined_objekte = list(unique_objekte.values())
+
+        # Ausgabe der kombinierten Objekte
+        for obj in combined_objekte:
+            print(f"Buchstabe {obj.buchstabe}: {obj.klasse} bei {obj.zentrum}")
 
     except Exception as e:
         print(f"Fehler: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+
