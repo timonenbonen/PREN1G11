@@ -123,6 +123,10 @@ class YoloDetectorApp:
         # Überschrift
         Label(self.control_frame, text="YOLO Objektdetektor", font=("Arial", 14, "bold")).pack(pady=(0, 10))
 
+        # Bild auswählen und detektieren
+        Button(self.control_frame, text="Bild auswählen & detektieren", command=self.bild_auswaehlen_und_laden).pack(
+            fill=tk.X, pady=5)
+
         # Modell auswählen
         Label(self.control_frame, text="Modell:", font=("Arial", 12)).pack(anchor=tk.W, pady=(10, 0))
         Button(self.control_frame, text="Modell auswählen", command=self.modell_auswaehlen).pack(fill=tk.X, pady=5)
@@ -182,6 +186,8 @@ class YoloDetectorApp:
         # Bildanzeige - verwende ein Label statt Canvas für einfachere Handhabung der Skalierung
         self.image_label = Label(self.preview_frame, bg='gray')
         self.image_label.pack(expand=True, fill=tk.BOTH)
+
+
 
     def on_window_resize(self, event=None):
         # Nur reagieren, wenn es eine signifikante Größenänderung gab und wir ein Bild haben
@@ -282,9 +288,49 @@ class YoloDetectorApp:
             self.status_var.set(f"Fehler beim Zugriff auf den Bildordner: {str(e)}")
             return None
 
+    def bild_auswaehlen_und_laden(self):
+        if self.is_processing:
+            return
+
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Bilder", "*.png;*.jpg;*.jpeg"), ("Alle Dateien", "*.*")],
+            title="Bild auswählen")
+
+        if not file_path:
+            return
+
+        self.is_processing = True
+        self.status_var.set("Lade ausgewähltes Bild...")
+
+        def process_thread():
+            try:
+                self.current_image_path = file_path
+                frame = cv2.imread(file_path)
+
+                if frame is None:
+                    self.status_var.set(f"Fehler beim Laden des Bildes: {os.path.basename(file_path)}")
+                    self.is_processing = False
+                    return
+
+                self.current_frame = frame
+                self.status_var.set(f"Bild geladen: {os.path.basename(file_path)}")
+
+                # Bild anzeigen und Erkennung durchführen
+                self.zeige_bild(frame)
+                self.erkennung_durchfuehren()
+
+            except Exception as e:
+                self.status_var.set(f"Fehler: {str(e)}")
+            finally:
+                self.is_processing = False
+
+        threading.Thread(target=process_thread).start()
+
     def zeige_bild(self, frame):
         if frame is None:
             return
+
+
 
         # Verfügbaren Platz für das Bild berechnen (Größe des Preview-Frames)
         available_width = self.preview_frame.winfo_width()
@@ -380,16 +426,13 @@ class YoloDetectorApp:
             self.status_var.set("Keine Objekte zum Speichern vorhanden.")
             return
 
-        # Determine the next available filename
-        base_name = "objekte"
-        extension = ".txt"
-        counter = 1
-        output_file = f"{base_name}{counter}{extension}"
-
-        # Find the next available filename
-        while os.path.exists(output_file):
-            counter += 1
-            output_file = f"{base_name}{counter}{extension}"
+        # Dateiname basiert auf dem aktuellen Bildnamen
+        if self.current_image_path:
+            base_name = os.path.splitext(os.path.basename(self.current_image_path))[0]
+            output_file = os.path.join(os.path.dirname(self.current_image_path), base_name + ".txt")
+        else:
+            self.status_var.set("Kein Bild geladen – kann Dateinamen nicht bestimmen.")
+            return
 
         try:
             with open(output_file, 'w') as f:
