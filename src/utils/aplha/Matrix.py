@@ -40,13 +40,15 @@ class Objekt:
 
     @staticmethod
     def create_adjacency_matrix(objekte_liste, connection_image_path, connection_threshold=0.15, bar_width=10):
-        """Erstellt eine Adjazenzmatrix mit Analyse eines breiten Balkens zwischen Punkten."""
+        """Erstellt eine Adjazenzmatrix mit Analyse eines breiten Balkens zwischen Punkten.
+        Ergänzt automatisch den Punkt, auf dem der Roboter steht (aus Bildname), falls nicht sichtbar."""
+        import re
+
         # Buchstaben-Liste für das Original-Schema
         buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 
         # Original Matrix als Vorlage
         original_matrix = np.array([
-            # A B C D E F G H
             [0, 1, 0, 0, 0, 1, 0, 1],  # A
             [1, 0, 1, 0, 0, 0, 0, 1],  # B
             [0, 1, 0, 1, 0, 0, 1, 1],  # C
@@ -60,92 +62,95 @@ class Objekt:
         # Dictionary für Objekte nach Buchstaben
         punkt_dict = {obj.buchstabe: obj for obj in objekte_liste if obj.buchstabe in buchstaben}
         vorhandene_buchstaben = sorted(list(punkt_dict.keys()))
-        print("Vorhandene Buchstaben:", vorhandene_buchstaben)
+        print("Vorhandene Buchstaben (vor Ergänzung):", vorhandene_buchstaben)
 
-        # Neue Matrix für vorhandene Buchstaben
+        # Bild laden, um Höhe/Breite zu bekommen
+        connection_image = cv2.imread(connection_image_path)
+        if connection_image is None:
+            raise FileNotFoundError(f"Verbindungsbild nicht gefunden: {connection_image_path}")
+        gray = cv2.cvtColor(connection_image, cv2.COLOR_BGR2GRAY)
+        image_height, image_width = gray.shape
+
+        # Extrahiere Roboterbuchstaben aus Dateiname
+        match = re.search(r'_([A-Ha-h])(?:\.|_|\b)', os.path.basename(connection_image_path))
+        roboter_buchstabe = match.group(1).upper() if match else None
+
+        # Ergänze nur den geschätzten Punkt, falls er fehlt
+        if roboter_buchstabe and roboter_buchstabe not in punkt_dict:
+            dummy_zentrum = (image_width / 2, image_height + 50)
+            dummy_obj = Objekt("point", 100.0, (
+                int(dummy_zentrum[0]) - 5, int(dummy_zentrum[1]) - 5,
+                int(dummy_zentrum[0]) + 5, int(dummy_zentrum[1]) + 5
+            ))
+            dummy_obj = Objekt("point", 100.0, (
+                int(dummy_zentrum[0]) - 5, int(dummy_zentrum[1]) - 5,
+                int(dummy_zentrum[0]) + 5, int(dummy_zentrum[1]) + 5
+            ))
+            dummy_obj.zentrum = dummy_zentrum
+            dummy_obj.set_buchstabe(roboter_buchstabe)
+            punkt_dict[roboter_buchstabe] = dummy_obj
+            objekte_liste.append(dummy_obj)  # <--- WICHTIG!
+            print(f"Info: Dummy-Punkt für {roboter_buchstabe} ergänzt bei {dummy_zentrum}")
+
+
+        # Neue Buchstabenliste nach Ergänzung
+        vorhandene_buchstaben = sorted(list(punkt_dict.keys()))
         n = len(vorhandene_buchstaben)
         adjacency_matrix = np.zeros((n, n), dtype=int)
 
         # Mapping zu Original-Indizes
         buchstaben_zu_original_index = {b: buchstaben.index(b) for b in vorhandene_buchstaben if b in buchstaben}
 
-        try:
-            # Bild laden und in Graustufen umwandeln
-            connection_image = cv2.imread(connection_image_path)
-            if connection_image is None:
-                raise FileNotFoundError(f"Verbindungsbild nicht gefunden: {connection_image_path}")
-            gray = cv2.cvtColor(connection_image, cv2.COLOR_BGR2GRAY)
+        # Verbindungsanalyse
+        for i, b1 in enumerate(vorhandene_buchstaben):
+            for j, b2 in enumerate(vorhandene_buchstaben):
+                if i >= j:
+                    continue
 
-            # Alle möglichen Verbindungen prüfen
-            for i, b1 in enumerate(vorhandene_buchstaben):
-                for j, b2 in enumerate(vorhandene_buchstaben):
-                    if i >= j:  # Nur obere Dreiecksmatrix prüfen
-                        continue
+                orig_i = buchstaben_zu_original_index.get(b1)
+                orig_j = buchstaben_zu_original_index.get(b2)
+                if orig_i is None or orig_j is None or original_matrix[orig_i][orig_j] != 1:
+                    continue
 
-                    # Prüfen, ob in Original-Matrix eine Verbindung vorhanden ist
-                    orig_i = buchstaben_zu_original_index.get(b1)
-                    orig_j = buchstaben_zu_original_index.get(b2)
-                    if orig_i is None or orig_j is None or original_matrix[orig_i][orig_j] != 1:
-                        continue
+                punkt1 = punkt_dict[b1]
+                punkt2 = punkt_dict[b2]
+                p1 = (int(punkt1.zentrum[0]), int(punkt1.zentrum[1]))
+                p2 = (int(punkt2.zentrum[0]), int(punkt2.zentrum[1]))
 
-                    punkt1 = punkt_dict[b1]
-                    punkt2 = punkt_dict[b2]
-                    p1 = (int(punkt1.zentrum[0]), int(punkt1.zentrum[1]))
-                    p2 = (int(punkt2.zentrum[0]), int(punkt2.zentrum[1]))
+                dx = p2[0] - p1[0]
+                dy = p2[1] - p1[1]
+                length = max(1, int(np.sqrt(dx * dx + dy * dy)))
+                if dx == 0 and dy == 0:
+                    continue
 
-                    # Vektor zwischen den Punkten berechnen
-                    dx = p2[0] - p1[0]
-                    dy = p2[1] - p1[1]
-                    length = max(1, int(np.sqrt(dx * dx + dy * dy)))
+                nx = -dy / length
+                ny = dx / length
 
-                    # Normalvektor für die Breite des Balkens
-                    if dx == 0 and dy == 0:  # Falls Punkte identisch sind
-                        continue
+                non_white_count = 0
+                total_pixels = 0
 
-                    # Normalisierter Richtungsvektor
-                    nx = -dy / length
-                    ny = dx / length
+                for t in range(length):
+                    x = int(p1[0] + t * dx / length)
+                    y = int(p1[1] + t * dy / length)
+                    for w in range(-bar_width // 2, bar_width // 2 + 1):
+                        wx = int(x + w * nx)
+                        wy = int(y + w * ny)
+                        if 0 <= wx < gray.shape[1] and 0 <= wy < gray.shape[0]:
+                            total_pixels += 1
+                            if gray[wy, wx] < 245:
+                                non_white_count += 1
 
-                    # Pixel im Balken analysieren
-                    non_white_count = 0
-                    total_pixels = 0
+                if total_pixels == 0:
+                    print(f"Warnung: Keine Pixel im Balken zwischen {b1}-{b2}")
+                    continue
 
-                    # Durch die Länge der Linie gehen
-                    for t in range(length):
-                        # Mittelpunkt der Linie bei diesem t
-                        x = int(p1[0] + t * dx / length)
-                        y = int(p1[1] + t * dy / length)
-
-                        # Durch die Breite des Balkens gehen
-                        for w in range(-bar_width // 2, bar_width // 2 + 1):
-                            wx = int(x + w * nx)
-                            wy = int(y + w * ny)
-
-                            # Sicherstellen, dass die Koordinaten im Bild liegen
-                            if 0 <= wx < gray.shape[1] and 0 <= wy < gray.shape[0]:
-                                total_pixels += 1
-                                if gray[wy, wx] < 245:  # Nicht weiß
-                                    non_white_count += 1
-
-                    if total_pixels == 0:
-                        print(f"Warnung: Keine Pixel im Balken zwischen {b1}-{b2}")
-                        continue
-
-                    # Verhältnis berechnen
-                    connection_ratio = non_white_count / total_pixels
-
-                    # Verbindung basierend auf dem Verhältnis bestimmen
-                    if connection_ratio >= connection_threshold:
-                        adjacency_matrix[i][j] = 1
-                        adjacency_matrix[j][i] = 1  # Symmetrie einhalten
-                        print(f"Verbindung bestätigt: {b1}-{b2} (Ratio: {connection_ratio:.2f})")
-                    else:
-                        print(f"Keine Verbindung: {b1}-{b2} (Ratio: {connection_ratio:.2f})")
-
-        except Exception as e:
-            print(f"Fehler bei Matrix-Erstellung: {str(e)}")
-            import traceback
-            traceback.print_exc()
+                connection_ratio = non_white_count / total_pixels
+                if connection_ratio >= connection_threshold:
+                    adjacency_matrix[i][j] = 1
+                    adjacency_matrix[j][i] = 1
+                    print(f"Verbindung bestätigt: {b1}-{b2} (Ratio: {connection_ratio:.2f})")
+                else:
+                    print(f"Keine Verbindung: {b1}-{b2} (Ratio: {connection_ratio:.2f})")
 
         return adjacency_matrix, vorhandene_buchstaben
 
@@ -347,70 +352,55 @@ class Objekt:
         return erkannte_punkte
 
     @classmethod
-    def assignment_F(cls, objekte_liste):
+    def assignment_F(cls, objekte_liste, image_width, image_height):
         """
         Zuordnungslogik für F (Roboter befindet sich auf Punkt F):
         1. A - linkster Punkt
-        2. G und H - zwei nächste Punkte nach A, wobei:
+        2. F wird angenommen als Mitte unten +50 Pixel
+        3. G und H - zwei nächste Punkte zu F
            - H ist weiter links und oben
            - G ist mehr rechts und unten
-        3. Gibt eine Liste der erkannten Punkte zurück
         """
         if not objekte_liste:
             return []
 
-        # Liste für erkannte Punkte erstellen
         erkannte_punkte = []
 
-        # Relevante Objekte (nur Punkte und Barrieren)
+        # Relevante Objekte
         relevante_objekte = [
             obj for obj in objekte_liste
             if obj.klasse in ['point', 'pointa', 'pointb', 'pointc', 'barrier']
         ]
 
-        # Nach X-Position sortieren (aufsteigend, linkster zuerst)
-        sortierte_objekte = sorted(relevante_objekte,
-                                   key=lambda obj: obj.zentrum[0])
-
         # 1. A - linkster Punkt
-        if sortierte_objekte:
-            linkster = sortierte_objekte[0]
+        if relevante_objekte:
+            linkster = min(relevante_objekte, key=lambda obj: obj.zentrum[0])
             linkster.set_buchstabe('A')
             erkannte_punkte.append(linkster)
 
-        # 2. Die nächsten zwei Punkte nach A finden
-        if erkannte_punkte:
-            punkt_a = erkannte_punkte[0]
-            verbleibende_punkte = [obj for obj in relevante_objekte if obj not in erkannte_punkte]
+        # 2. F - angenommene Position
+        f_zentrum = (image_width / 2, image_height + 50)
+        print(f"Info: Verwende angenommene Position für F (Mitte unten +50): {f_zentrum}")
 
-            if len(verbleibende_punkte) >= 2:
-                # Sortiere nach Entfernung zu A
-                verbleibende_punkte.sort(
-                    key=lambda obj: np.sqrt((obj.zentrum[0] - punkt_a.zentrum[0]) ** 2 +
-                                            (obj.zentrum[1] - punkt_a.zentrum[1]) ** 2)
-                )
+        # 3. Zwei nächste Punkte zu F
+        verbleibende = [obj for obj in relevante_objekte if obj not in erkannte_punkte]
+        if len(verbleibende) >= 2:
+            verbleibende.sort(
+                key=lambda obj: np.sqrt((obj.zentrum[0] - f_zentrum[0]) ** 2 +
+                                        (obj.zentrum[1] - f_zentrum[1]) ** 2)
+            )
+            naechste_zwei = verbleibende[:2]
 
-                # Die nächsten zwei Punkte nach A
-                naechste_zwei = verbleibende_punkte[:2]
-
-                # Sortiere diese zwei Punkte: H (links oben) und G (rechts unten)
-                # Ein Punkt ist mehr links+oben, wenn x+y kleiner ist
-                naechste_zwei.sort(
-                    key=lambda obj: obj.zentrum[0] + obj.zentrum[1]
-                )
-
-                # H - mehr links und oben
-                naechste_zwei[0].set_buchstabe('H')
-                erkannte_punkte.append(naechste_zwei[0])
-
-                # G - mehr rechts und unten
-                naechste_zwei[1].set_buchstabe('G')
-                erkannte_punkte.append(naechste_zwei[1])
+            # Sortiere die zwei: H = weiter links und oben (kleineres x+y), G = anderes
+            naechste_zwei.sort(key=lambda obj: obj.zentrum[0] + obj.zentrum[1])
+            naechste_zwei[0].set_buchstabe('H')
+            naechste_zwei[1].set_buchstabe('G')
+            erkannte_punkte.extend(naechste_zwei)
 
         # Konsistenzprüfung
-        buchstaben = [getattr(obj, 'buchstabe', None) for obj in erkannte_punkte]
-        if len([b for b in buchstaben if b]) != len(set(b for b in buchstaben if b)):
-            print("Warnung: Doppelte Buchstaben erkannt!")
+        buchstaben = [obj.buchstabe for obj in erkannte_punkte]
+        if len(buchstaben) != len(set(buchstaben)):
+            print("Warnung: Doppelte Buchstaben in assignment_F erkannt!")
 
         return erkannte_punkte
 
@@ -821,119 +811,89 @@ class Objekt:
 
 # Verwendung
 # In the main section, replace your current code with:
-
 if __name__ == "__main__":
+    import os
+    import re
+
     try:
-        # === 1. Eingaben einlesen für E, F und G ===
         base_dir = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\aplha\Dataset'
 
-        # Pfade für alle drei Szenarien definieren
-        objekte_paths = {
-            'E': os.path.join(base_dir, 'objekte_E.txt'),
-            'F': os.path.join(base_dir, 'objekte_F.txt'),
-            'G': os.path.join(base_dir, 'objekte_G.txt')
-        }
+        # Alle Bild-Text-Paare erkennen (z. B. bearbeitet_Test2_A.jpg + Test2_A.txt)
+        szenarien = []
+        for dateiname in os.listdir(base_dir):
+            if dateiname.lower().endswith(".jpg"):
+                match = re.search(r'_([A-Ha-h])\.', dateiname)
+                if match:
+                    buchstabe = match.group(1).upper()
+                    bild_path = os.path.join(base_dir, dateiname)
 
-        img_paths = {
-            'E': os.path.join(base_dir, 'bildE.jpg'),
-            'F': os.path.join(base_dir, 'bildF.jpg'),
-            'G': os.path.join(base_dir, 'bildG.jpg')
-        }
+                    # Versuche zugehörige .txt Datei zu finden
+                    txt_candidates = [
+                        f for f in os.listdir(base_dir)
+                        if f.lower().endswith(".txt") and f"_{buchstabe}." in f
+                    ]
+                    if txt_candidates:
+                        txt_path = os.path.join(base_dir, txt_candidates[0])
+                        szenarien.append((buchstabe, txt_path, bild_path))
 
-        # === 2. Verarbeitung für Szenario E ===
-        with open(objekte_paths['E']) as file:
-            objekte_E = Objekt.parse_text_to_objects(file.read())
+        alle_erkannten_objekte = []
 
-        erkannte_E = Objekt.assignment_E(objekte_E)
+        for buchstabe, txt_path, bild_path in szenarien:
+            print(f"\n--- Verarbeitung für Punkt {buchstabe} ---")
 
-        # Matrix erstellen (nur Linien)
-        matrix_E, buchstaben_E = Objekt.create_adjacency_matrix(objekte_E, img_paths['E'])
+            with open(txt_path, 'r') as file:
+                objekte = Objekt.parse_text_to_objects(file.read())
 
-        print("\nMatrix nach Assignment E (nur Linien):")
-        print("   " + " ".join(buchstaben_E))
-        for i, row in enumerate(matrix_E):
-            print(f"{buchstaben_E[i]} {list(row)}")
+            # Aufruf der passenden Assignment-Methode
+            assignment_func = getattr(Objekt, f'assignment_{buchstabe}', None)
+            if assignment_func:
+                # Für assignment_G Bildgröße mitgeben
+                if assignment_func.__name__ in ['assignment_G', 'assignment_F']:
+                    image = cv2.imread(bild_path)
+                    if image is None:
+                        raise FileNotFoundError(f"Bild für assignment_G nicht gefunden: {bild_path}")
+                    height, width = image.shape[:2]
+                    erkannte = assignment_func(objekte, width, height)
+                else:
+                    erkannte = assignment_func(objekte)
 
-        # Walls prüfen
-        matrix_E_mit_walls = Objekt.find_wall(objekte_E, matrix_E, buchstaben_E)
+            else:
+                print(f"⚠️ Keine Assignment-Methode für Buchstabe {buchstabe} gefunden.")
+                erkannte = []
 
-        print("\nMatrix nach Assignment E (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
-        print("   " + " ".join(buchstaben_E))
-        for i, row in enumerate(matrix_E_mit_walls):
-            print(f"{buchstaben_E[i]} {list(row)}")
+            alle_erkannten_objekte += erkannte
 
-        # Ergebnisbild für E erstellen
-        output_path_E = os.path.join(base_dir, 'output_E.jpg')
-        Objekt.draw_objects_on_image(img_paths['E'], objekte_E, output_path_E)
+            # Matrix (nur Linien)
+            matrix, matrix_buchstaben = Objekt.create_adjacency_matrix(objekte, bild_path)
 
-        # === 3. Verarbeitung für Szenario F ===
-        with open(objekte_paths['F']) as file:
-            objekte_F = Objekt.parse_text_to_objects(file.read())
+            print(f"\nMatrix nach Assignment {buchstabe} (nur Linien):")
+            print("   " + " ".join(matrix_buchstaben))
+            for i, row in enumerate(matrix):
+                print(f"{matrix_buchstaben[i]} {list(row)}")
 
-        erkannte_F = Objekt.assignment_F(objekte_F)
+            # Walls prüfen
+            matrix_mit_walls = Objekt.find_wall(objekte, matrix, matrix_buchstaben)
 
-        # Matrix erstellen (nur Linien)
-        matrix_F, buchstaben_F = Objekt.create_adjacency_matrix(objekte_F, img_paths['F'])
+            print(f"\nMatrix nach Assignment {buchstabe} (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
+            print("   " + " ".join(matrix_buchstaben))
+            for i, row in enumerate(matrix_mit_walls):
+                print(f"{matrix_buchstaben[i]} {list(row)}")
 
-        print("\nMatrix nach Assignment F (nur Linien):")
-        print("   " + " ".join(buchstaben_F))
-        for i, row in enumerate(matrix_F):
-            print(f"{buchstaben_F[i]} {list(row)}")
+            # Bild ausgeben
+            output_path = os.path.join(base_dir, f'output_{buchstabe}.jpg')
+            Objekt.draw_objects_on_image(bild_path, objekte, output_path)
 
-        # Walls prüfen
-        matrix_F_mit_walls = Objekt.find_wall(objekte_F, matrix_F, buchstaben_F)
-
-        print("\nMatrix nach Assignment F (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
-        print("   " + " ".join(buchstaben_F))
-        for i, row in enumerate(matrix_F_mit_walls):
-            print(f"{buchstaben_F[i]} {list(row)}")
-
-        # Ergebnisbild für F erstellen
-        output_path_F = os.path.join(base_dir, 'output_F.jpg')
-        Objekt.draw_objects_on_image(img_paths['F'], objekte_F, output_path_F)
-
-        # === 4. NEU: Verarbeitung für Szenario G ===
-        with open(objekte_paths['G']) as file:
-            objekte_G = Objekt.parse_text_to_objects(file.read())
-
-        erkannte_G = Objekt.assignment_G(objekte_G)
-
-        # Matrix erstellen (nur Linien)
-        matrix_G, buchstaben_G = Objekt.create_adjacency_matrix(objekte_G, img_paths['G'])
-
-        print("\nMatrix nach Assignment G (nur Linien):")
-        print("   " + " ".join(buchstaben_G))
-        for i, row in enumerate(matrix_G):
-            print(f"{buchstaben_G[i]} {list(row)}")
-
-        # Walls prüfen
-        matrix_G_mit_walls = Objekt.find_wall(objekte_G, matrix_G, buchstaben_G)
-
-        print("\nMatrix nach Assignment G (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
-        print("   " + " ".join(buchstaben_G))
-        for i, row in enumerate(matrix_G_mit_walls):
-            print(f"{buchstaben_G[i]} {list(row)}")
-
-        # Ergebnisbild für G erstellen
-        output_path_G = os.path.join(base_dir, 'output_G.jpg')
-        Objekt.draw_objects_on_image(img_paths['G'], objekte_G, output_path_G)
-
-        # === 5. Finale Matrix mit kombinierten Punkten aus allen Szenarien ===
-        print("\nKombinierte Objekte aus allen Szenarien:")
-        alle_objekte = objekte_E + objekte_F + objekte_G
+        # Einmalige Ausgabe aller eindeutigen Buchstaben
+        print("\nKombinierte eindeutige Objekte aus allen Szenarien:")
         unique_objekte = {}
-        for obj in alle_objekte:
+        for obj in alle_erkannten_objekte:
             if obj.buchstabe and obj.buchstabe not in unique_objekte:
                 unique_objekte[obj.buchstabe] = obj
-        combined_objekte = list(unique_objekte.values())
-
-        # Ausgabe der kombinierten Objekte
-        for obj in combined_objekte:
-            print(f"Buchstabe {obj.buchstabe}: {obj.klasse} bei {obj.zentrum}")
+        for b, obj in unique_objekte.items():
+            print(f"Buchstabe {b}: {obj.klasse} bei {obj.zentrum}")
 
     except Exception as e:
         print(f"Fehler: {str(e)}")
         import traceback
-
         traceback.print_exc()
 
