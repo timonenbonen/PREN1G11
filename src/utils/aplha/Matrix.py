@@ -41,8 +41,10 @@ class Objekt:
     @staticmethod
     def create_adjacency_matrix(objekte_liste, connection_image_path, connection_threshold=0.15, bar_width=10):
         """Erstellt eine Adjazenzmatrix mit Analyse eines breiten Balkens zwischen Punkten.
-        Ergänzt automatisch den Punkt, auf dem der Roboter steht (aus Bildname), falls nicht sichtbar."""
+        Ergänzt automatisch den Punkt, auf dem der Roboter steht (aus Bildname), falls nicht sichtbar.
+        Speichert die Matrix in eine Datei unter Dataset/Matrix/Currentmatrix.txt."""
         import re
+        import os
 
         # Buchstaben-Liste für das Original-Schema
         buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -82,16 +84,11 @@ class Objekt:
                 int(dummy_zentrum[0]) - 5, int(dummy_zentrum[1]) - 5,
                 int(dummy_zentrum[0]) + 5, int(dummy_zentrum[1]) + 5
             ))
-            dummy_obj = Objekt("point", 100.0, (
-                int(dummy_zentrum[0]) - 5, int(dummy_zentrum[1]) - 5,
-                int(dummy_zentrum[0]) + 5, int(dummy_zentrum[1]) + 5
-            ))
             dummy_obj.zentrum = dummy_zentrum
             dummy_obj.set_buchstabe(roboter_buchstabe)
             punkt_dict[roboter_buchstabe] = dummy_obj
             objekte_liste.append(dummy_obj)  # <--- WICHTIG!
             print(f"Info: Dummy-Punkt für {roboter_buchstabe} ergänzt bei {dummy_zentrum}")
-
 
         # Neue Buchstabenliste nach Ergänzung
         vorhandene_buchstaben = sorted(list(punkt_dict.keys()))
@@ -152,6 +149,7 @@ class Objekt:
                 else:
                     print(f"Keine Verbindung: {b1}-{b2} (Ratio: {connection_ratio:.2f})")
 
+
         return adjacency_matrix, vorhandene_buchstaben
 
     @staticmethod
@@ -188,6 +186,35 @@ class Objekt:
                             break
                     if erweiterte_matrix[i][j] == 2:
                         break
+
+                # Matrix speichern verschoben von create_adjacency_matrix nach hier
+                dataset_dir = os.path.join(os.path.dirname(os.path.dirname("dummy_path.jpg")), "Dataset")
+                matrix_dir = os.path.join(dataset_dir, "Matrix")
+                os.makedirs(matrix_dir, exist_ok=True)
+                matrix_path = os.path.join(matrix_dir, "Currentmatrix.txt")
+
+                buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+                vollstaendige_matrix = np.zeros((8, 8), dtype=int)
+
+                for i, b1 in enumerate(matrix_buchstaben):
+                    if b1 in buchstaben:
+                        orig_i = buchstaben.index(b1)
+                        for j, b2 in enumerate(matrix_buchstaben):
+                            if b2 in buchstaben:
+                                orig_j = buchstaben.index(b2)
+                                vollstaendige_matrix[orig_i][orig_j] = erweiterte_matrix[i][j]
+
+                with open(matrix_path, 'w') as f:
+                    f.write("adjacency_matrix = np.array([\n")
+                    f.write("    # " + " ".join(buchstaben) + "\n")
+                    for i, row in enumerate(vollstaendige_matrix):
+                        simple_ints = [int(x) for x in row]
+                        f.write(f"    {simple_ints},  # {buchstaben[i]}\n")
+                    f.write("])")
+
+                print(f"Matrix mit Walls gespeichert unter: {matrix_path}")
+
+                return erweiterte_matrix
 
         return erweiterte_matrix
 
@@ -869,7 +896,9 @@ if __name__ == "__main__":
             print(f"\nMatrix nach Assignment {buchstabe} (nur Linien):")
             print("   " + " ".join(matrix_buchstaben))
             for i, row in enumerate(matrix):
-                print(f"{matrix_buchstaben[i]} {list(row)}")
+                # Konvertiere np.int64 zu einfachen int-Werten
+                simple_ints = [int(x) for x in row]
+                print(f"{matrix_buchstaben[i]} {simple_ints}")
 
             # Walls prüfen
             matrix_mit_walls = Objekt.find_wall(objekte, matrix, matrix_buchstaben)
@@ -877,7 +906,9 @@ if __name__ == "__main__":
             print(f"\nMatrix nach Assignment {buchstabe} (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
             print("   " + " ".join(matrix_buchstaben))
             for i, row in enumerate(matrix_mit_walls):
-                print(f"{matrix_buchstaben[i]} {list(row)}")
+                # Konvertiere np.int64 zu einfachen int-Werten
+                simple_ints = [int(x) for x in row]
+                print(f"{matrix_buchstaben[i]} {simple_ints}")
 
             # Bild ausgeben
             output_path = os.path.join(base_dir, f'output_{buchstabe}.jpg')
