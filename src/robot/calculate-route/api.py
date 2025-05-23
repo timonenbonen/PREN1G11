@@ -4,9 +4,17 @@ from image_recognition import recognize_objects
 from path_calculation import calculate_path
 from fastapi.responses import FileResponse
 import requests
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or ["http://localhost:8000"] for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/calculate")
 def calculate_route():
