@@ -1,148 +1,116 @@
-import tkinter as tk
 import numpy as np
-import itertools
 
-adjacency_matrix = np.array([
-    [0, 1, 0, 0, 0, 1, 0, 1],
-    [1, 0, 1, 0, 0, 0, 0, 1],
-    [0, 1, 0, 1, 0, 0, 1, 1],
-    [0, 0, 1, 0, 1, 0, 1, 0],
-    [0, 0, 0, 1, 0, 1, 1, 0],
-    [1, 0, 0, 0, 1, 0, 1, 1],
-    [0, 0, 1, 1, 1, 1, 0, 1],
-    [1, 1, 1, 0, 0, 1, 1, 0]
-])
-labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-
+# Finale Koordinaten
 positions = {
-    0: [100, 100],
-    1: [200, 50],
-    2: [300, 100],
-    3: [300, 200],
-    4: [200, 300],
-    5: [100, 200],
-    6: [200, 200],
-    7: [200, 125]
+    0: [100, 100],  # A
+    1: [200, 50],  # B
+    2: [300, 100],  # C
+    3: [300, 200],  # D
+    4: [194, 250],  # E
+    5: [100, 200],  # F
+    6: [196, 185],  # G
+    7: [179, 133]  # H
 }
 
-class GraphApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Alle Winkel in allen Dreiecken")
-        self.canvas = tk.Canvas(root, width=600, height=400, bg='white')
-        self.canvas.pack()
+labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 
-        self.nodes = {}
-        self.dragging = None
+# Roboter-Navigationsregeln: Welcher Punkt ist das nächste Ziel von jedem Punkt
+next_targets = {
+    4: 6,  # E -> G
+    3: 2,  # D -> C
+    6: 7,  # G -> H
+    5: 0,  # F -> A
+    2: 1,  # C -> B
+    7: 1,  # H -> B
+    0: 1,  # A -> B
+    1: 7  # B -> H
+}
 
-        self.draw_graph()
-        self.canvas.bind("<B1-Motion>", self.on_drag)
-        self.canvas.bind("<ButtonPress-1>", self.on_click)
-        self.canvas.bind("<ButtonRelease-1>", self.on_release)
 
-    def draw_graph(self):
-        self.canvas.delete("all")
+def calculate_robot_turn(from_label, to_label, current_heading_deg=0):
+    """
+    Berechnet beide Drehungen des Roboters:
+    1. Drehung zum Ziel (von aktueller Ausrichtung)
+    2. Drehung zum nächsten Ziel (nach Ankunft)
 
-        # Kanten
-        for i in range(len(adjacency_matrix)):
-            for j in range(i + 1, len(adjacency_matrix)):
-                if adjacency_matrix[i, j]:
-                    x1, y1 = positions[i]
-                    x2, y2 = positions[j]
-                    self.canvas.create_line(x1, y1, x2, y2, fill="black")
+    Args:
+        from_label: Startpunkt (z.B. 'E')
+        to_label: Zielpunkt (z.B. 'D')
+        current_heading_deg: Aktuelle Ausrichtung des Roboters in Grad (0° = rechts/Osten)
+    """
+    # Labels zu Indizes konvertieren
+    try:
+        from_idx = labels.index(from_label)
+        to_idx = labels.index(to_label)
+    except ValueError:
+        return f"Fehler: Ungültiger Punkt"
 
-        # Dreiecke
-        triangles = self.find_triangles()
-        angle_offset_map = {}  # Offset zur besseren Lesbarkeit
+    # Nächstes Ziel nach dem aktuellen Ziel bestimmen
+    if to_idx not in next_targets:
+        return f"Fehler: Kein nächstes Ziel für Punkt {to_label}"
 
-        for tri in triangles:
-            a, b, c = tri
+    next_idx = next_targets[to_idx]
+    next_label = labels[next_idx]
 
-            # Berechne Winkel bei jedem Eckpunkt
-            angles = [
-                (a, self.calculate_angle(positions[b], positions[a], positions[c])),
-                (b, self.calculate_angle(positions[a], positions[b], positions[c])),
-                (c, self.calculate_angle(positions[a], positions[c], positions[b]))
-            ]
+    # Koordinaten holen
+    from_pos = np.array(positions[from_idx])
+    to_pos = np.array(positions[to_idx])
+    next_pos = np.array(positions[next_idx])
 
-            for idx, angle in angles:
-                # Position des Eckpunkts
-                px, py = positions[idx]
+    # Richtungsvektoren berechnen
+    to_direction = to_pos - from_pos  # Richtung von FROM zu TO
+    next_direction = next_pos - to_pos  # Richtung von TO zu NEXT
 
-                # Die anderen zwei Punkte im Dreieck
-                others = [p for p in tri if p != idx]
-                p1 = np.array(positions[others[0]])
-                p2 = np.array(positions[others[1]])
-                p = np.array([px, py])
+    # Winkel berechnen
+    to_angle = np.arctan2(to_direction[1], to_direction[0])
+    next_angle = np.arctan2(next_direction[1], next_direction[0])
 
-                # Vektoren zu den anderen Punkten
-                v1 = (p1 - p) / np.linalg.norm(p1 - p)
-                v2 = (p2 - p) / np.linalg.norm(p2 - p)
+    # 1. Drehung: Von aktueller Ausrichtung zum Ziel
+    current_heading_rad = np.radians(current_heading_deg)
+    turn_to_target = to_angle - current_heading_rad
 
-                # Richtung entlang der Winkelhalbierenden
-                bisector = (v1 + v2)
-                if np.linalg.norm(bisector) == 0:
-                    bisector = np.array([0, 0])
-                else:
-                    bisector = bisector / np.linalg.norm(bisector)
+    # Winkel normalisieren
+    if turn_to_target > np.pi:
+        turn_to_target -= 2 * np.pi
+    elif turn_to_target < -np.pi:
+        turn_to_target += 2 * np.pi
 
-                # Position etwas entlang der Winkelhalbierenden
-                offset_length = 20
-                tx, ty = p + bisector * offset_length
+    turn_to_target_deg = np.degrees(turn_to_target)
 
-                self.canvas.create_text(tx, ty, text=f"{angle:.1f}°", fill="red", font=("Arial", 8))
+    # 2. Drehung: Vom Ziel zum nächsten Punkt
+    turn_to_next = next_angle - to_angle
 
-        # Knoten
-        self.nodes.clear()
-        for i, (x, y) in positions.items():
-            r = 10
-            oval = self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="skyblue")
-            label = self.canvas.create_text(x, y, text=labels[i], font=("Arial", 10, "bold"))
-            self.nodes[oval] = i
-            self.nodes[label] = i
+    # Winkel normalisieren
+    if turn_to_next > np.pi:
+        turn_to_next -= 2 * np.pi
+    elif turn_to_next < -np.pi:
+        turn_to_next += 2 * np.pi
 
-    def get_offset_vector(self, index):
-        # Gibt versetzte Position für Mehrfachwinkel an einem Knoten
-        angle = index * 40
-        radius = 15
-        rad = np.radians(angle)
-        return radius * np.cos(rad), radius * np.sin(rad)
+    turn_to_next_deg = np.degrees(turn_to_next)
 
-    def find_triangles(self):
-        triangles = set()
-        for i in range(len(adjacency_matrix)):
-            neighbors = [j for j in range(len(adjacency_matrix)) if adjacency_matrix[i][j]]
-            for j, k in itertools.combinations(neighbors, 2):
-                if adjacency_matrix[j][k]:
-                    triangles.add(tuple(sorted((i, j, k))))
-        return list(triangles)
+    # Formatierung der Ausgabe
+    def format_turn(angle_deg):
+        if abs(angle_deg) < 0.1:
+            return "GERADEAUS"
+        elif angle_deg > 0:
+            return f"LINKS {angle_deg:.1f}°"
+        else:
+            return f"RECHTS {abs(angle_deg):.1f}°"
 
-    def calculate_angle(self, p1, p2, p3):
-        a = np.array(p1)
-        b = np.array(p2)
-        c = np.array(p3)
-        ba = a - b
-        bc = c - b
-        cosine = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
-        angle = np.arccos(np.clip(cosine, -1.0, 1.0))
-        return np.degrees(angle)
+    turn1 = format_turn(turn_to_target_deg)
+    turn2 = format_turn(turn_to_next_deg)
 
-    def on_click(self, event):
-        for item in self.nodes:
-            x, y = positions[self.nodes[item]]
-            if (event.x - x)**2 + (event.y - y)**2 <= 100:
-                self.dragging = self.nodes[item]
-                break
+    return f"{from_label}→{to_label}→{next_label}: 1) {turn1}, 2) {turn2}"
 
-    def on_drag(self, event):
-        if self.dragging is not None:
-            positions[self.dragging] = [event.x, event.y]
-            self.draw_graph()
 
-    def on_release(self, event):
-        self.dragging = None
+# Beispiele
+if __name__ == "__main__":
+    # Standard: Roboter schaut nach rechts (0°)
+    print("Standard (Roboter schaut nach rechts, 0°):")
+    print(calculate_robot_turn('E', 'D'))
+    print(calculate_robot_turn('A', 'B'))
+    print(calculate_robot_turn('B', 'H'))
 
-# Starten
-root = tk.Tk()
-app = GraphApp(root)
-root.mainloop()
+    print("\nMit anderer Startausrichtung (90° = nach oben):")
+    print(calculate_robot_turn('E', 'D', 90))
+    print(calculate_robot_turn('A', 'B', 90))
