@@ -176,56 +176,69 @@ class Objekt:
                 # Prüfe, ob irgendein Wall die Linie p1-p2 schneidet
                 for wall in walls:
                     wx1, wy1, wx2, wy2 = wall.bounding_box
-                    wall_bbox = [(wx1, wy1), (wx2, wy1), (wx2, wy2), (wx1, wy2)]
-                    wall_edges = list(zip(wall_bbox, wall_bbox[1:] + [wall_bbox[0]]))
 
-                    for w_start, w_end in wall_edges:
-                        if Objekt._linien_schneiden(p1, p2, np.array(w_start), np.array(w_end)):
-                            erweiterte_matrix[i][j] = 2
-                            erweiterte_matrix[j][i] = 2
-                            break
-                    if erweiterte_matrix[i][j] == 2:
+                    if Objekt._linie_schneidet_rechteck(p1, p2, (wx1, wy1, wx2, wy2)):
+                        erweiterte_matrix[i][j] = 2
+                        erweiterte_matrix[j][i] = 2
                         break
 
-                # Matrix speichern verschoben von create_adjacency_matrix nach hier
-                dataset_dir = os.path.join(os.path.dirname(os.path.dirname("dummy_path.jpg")), "Dataset")
-                matrix_dir = os.path.join(dataset_dir, "Matrix")
-                os.makedirs(matrix_dir, exist_ok=True)
-                matrix_path = os.path.join(matrix_dir, "Currentmatrix.txt")
+        # Matrix speichern (nur einmal am Ende)
+        dataset_dir = os.path.join(os.path.dirname(os.path.dirname("dummy_path.jpg")), "Dataset")
+        matrix_dir = os.path.join(dataset_dir, "Matrix")
+        os.makedirs(matrix_dir, exist_ok=True)
+        matrix_path = os.path.join(matrix_dir, "Currentmatrix.txt")
 
-                buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-                vollstaendige_matrix = np.zeros((8, 8), dtype=int)
+        buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+        vollstaendige_matrix = np.zeros((8, 8), dtype=int)
 
-                for i, b1 in enumerate(matrix_buchstaben):
-                    if b1 in buchstaben:
-                        orig_i = buchstaben.index(b1)
-                        for j, b2 in enumerate(matrix_buchstaben):
-                            if b2 in buchstaben:
-                                orig_j = buchstaben.index(b2)
-                                vollstaendige_matrix[orig_i][orig_j] = erweiterte_matrix[i][j]
+        for i, b1 in enumerate(matrix_buchstaben):
+            if b1 in buchstaben:
+                orig_i = buchstaben.index(b1)
+                for j, b2 in enumerate(matrix_buchstaben):
+                    if b2 in buchstaben:
+                        orig_j = buchstaben.index(b2)
+                        vollstaendige_matrix[orig_i][orig_j] = erweiterte_matrix[i][j]
 
-                with open(matrix_path, 'w') as f:
-                    f.write("adjacency_matrix = np.array([\n")
-                    f.write("    # " + " ".join(buchstaben) + "\n")
-                    for i, row in enumerate(vollstaendige_matrix):
-                        simple_ints = [int(x) for x in row]
-                        f.write(f"    {simple_ints},  # {buchstaben[i]}\n")
-                    f.write("])")
+        with open(matrix_path, 'w') as f:
+            f.write("adjacency_matrix = np.array([\n")
+            f.write("    # " + " ".join(buchstaben) + "\n")
+            for i, row in enumerate(vollstaendige_matrix):
+                simple_ints = [int(x) for x in row]
+                f.write(f"    {simple_ints},  # {buchstaben[i]}\n")
+            f.write("])")
 
-                print(f"Matrix mit Walls gespeichert unter: {matrix_path}")
-
-                return erweiterte_matrix
+        print(f"Matrix mit Walls gespeichert unter: {matrix_path}")
 
         return erweiterte_matrix
 
     @staticmethod
-    def _linien_schneiden(p1, p2, q1, q2):
-        """Hilfsmethode: prüft, ob zwei Liniensegmente sich schneiden"""
+    def _linie_schneidet_rechteck(p1, p2, rect):
+        """Prüft, ob die Linie zwischen p1 und p2 das Rechteck schneidet oder innerhalb liegt"""
+        x_min, y_min, x_max, y_max = rect
 
-        def ccw(a, b, c):
-            return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0])
+        # Check 1: Beide Punkte liegen innerhalb → gilt als "durchgeschnitten"
+        if (x_min <= p1[0] <= x_max and y_min <= p1[1] <= y_max) or \
+                (x_min <= p2[0] <= x_max and y_min <= p2[1] <= y_max):
+            return True
 
-        return (ccw(p1, q1, q2) != ccw(p2, q1, q2)) and (ccw(p1, p2, q1) != ccw(p1, p2, q2))
+        # Check 2: Linie schneidet irgendeine Kante
+        ecken = [(x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max)]
+        kanten = list(zip(ecken, ecken[1:] + [ecken[0]]))
+
+        for a, b in kanten:
+            if Objekt._linien_schneiden(np.array(p1), np.array(p2), np.array(a), np.array(b)):
+                return True
+
+        return False
+
+    @staticmethod
+    def _linien_schneiden(a1, a2, b1, b2):
+        """Prüft, ob sich zwei Liniensegmente (a1-a2 und b1-b2) schneiden."""
+
+        def ccw(p1, p2, p3):
+            return (p3[1] - p1[1]) * (p2[0] - p1[0]) > (p2[1] - p1[1]) * (p3[0] - p1[0])
+
+        return (ccw(a1, b1, b2) != ccw(a2, b1, b2)) and (ccw(a1, a2, b1) != ccw(a1, a2, b2))
 
     @staticmethod
     def parse_text_to_objects(text):
@@ -841,11 +854,13 @@ class Objekt:
 if __name__ == "__main__":
     import os
     import re
+    import numpy as np
+    import cv2
 
     try:
         base_dir = r'C:\Users\marin\PycharmProjects\PREN1G11\src\utils\aplha\Dataset'
 
-        # Alle Bild-Text-Paare erkennen (z. B. bearbeitet_Test2_A.jpg + Test2_A.txt)
+        # Alle Szenarien (Bild + Text)
         szenarien = []
         for dateiname in os.listdir(base_dir):
             if dateiname.lower().endswith(".jpg"):
@@ -854,7 +869,6 @@ if __name__ == "__main__":
                     buchstabe = match.group(1).upper()
                     bild_path = os.path.join(base_dir, dateiname)
 
-                    # Versuche zugehörige .txt Datei zu finden
                     txt_candidates = [
                         f for f in os.listdir(base_dir)
                         if f.lower().endswith(".txt") and f"_{buchstabe}." in f
@@ -864,6 +878,7 @@ if __name__ == "__main__":
                         szenarien.append((buchstabe, txt_path, bild_path))
 
         alle_erkannten_objekte = []
+        finale_matrixen = []  # Nur mit Wall geprüfte Matrizen sammeln
 
         for buchstabe, txt_path, bild_path in szenarien:
             print(f"\n--- Verarbeitung für Punkt {buchstabe} ---")
@@ -871,10 +886,9 @@ if __name__ == "__main__":
             with open(txt_path, 'r') as file:
                 objekte = Objekt.parse_text_to_objects(file.read())
 
-            # Aufruf der passenden Assignment-Methode
+            # Zuweisung
             assignment_func = getattr(Objekt, f'assignment_{buchstabe}', None)
             if assignment_func:
-                # Für assignment_G Bildgröße mitgeben
                 if assignment_func.__name__ in ['assignment_G', 'assignment_F']:
                     image = cv2.imread(bild_path)
                     if image is None:
@@ -883,7 +897,6 @@ if __name__ == "__main__":
                     erkannte = assignment_func(objekte, width, height)
                 else:
                     erkannte = assignment_func(objekte)
-
             else:
                 print(f"⚠️ Keine Assignment-Methode für Buchstabe {buchstabe} gefunden.")
                 erkannte = []
@@ -896,9 +909,7 @@ if __name__ == "__main__":
             print(f"\nMatrix nach Assignment {buchstabe} (nur Linien):")
             print("   " + " ".join(matrix_buchstaben))
             for i, row in enumerate(matrix):
-                # Konvertiere np.int64 zu einfachen int-Werten
-                simple_ints = [int(x) for x in row]
-                print(f"{matrix_buchstaben[i]} {simple_ints}")
+                print(f"{matrix_buchstaben[i]} {list(map(int, row))}")
 
             # Walls prüfen
             matrix_mit_walls = Objekt.find_wall(objekte, matrix, matrix_buchstaben)
@@ -906,25 +917,51 @@ if __name__ == "__main__":
             print(f"\nMatrix nach Assignment {buchstabe} (mit Walls geprüft – 0=keine, 1=Linie, 2=Wall):")
             print("   " + " ".join(matrix_buchstaben))
             for i, row in enumerate(matrix_mit_walls):
-                # Konvertiere np.int64 zu einfachen int-Werten
-                simple_ints = [int(x) for x in row]
-                print(f"{matrix_buchstaben[i]} {simple_ints}")
+                print(f"{matrix_buchstaben[i]} {list(map(int, row))}")
 
-            # Bild ausgeben
+            # Umwandlung in vollständige 8x8 Matrix
+            buchstaben_liste = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+            vollmatrix = np.zeros((8, 8), dtype=int)
+
+            # Exakte Übernahme der Wände von matrix_mit_walls in 8x8-Matrix
+            for i_local, b1 in enumerate(matrix_buchstaben):
+                if b1 in buchstaben_liste:
+                    i_global = buchstaben_liste.index(b1)
+                    for j_local, b2 in enumerate(matrix_buchstaben):
+                        if b2 in buchstaben_liste:
+                            j_global = buchstaben_liste.index(b2)
+                            vollmatrix[i_global][j_global] = matrix_mit_walls[i_local][j_local]
+
+            finale_matrixen.append(vollmatrix)
+
+            # Bild mit Balken
             output_path = os.path.join(base_dir, f'output_{buchstabe}.jpg')
             Objekt.draw_objects_on_image(bild_path, objekte, output_path)
 
-        # Einmalige Ausgabe aller eindeutigen Buchstaben
-        print("\nKombinierte eindeutige Objekte aus allen Szenarien:")
-        unique_objekte = {}
-        for obj in alle_erkannten_objekte:
-            if obj.buchstabe and obj.buchstabe not in unique_objekte:
-                unique_objekte[obj.buchstabe] = obj
-        for b, obj in unique_objekte.items():
-            print(f"Buchstabe {b}: {obj.klasse} bei {obj.zentrum}")
+        # Endgültige kombinierte Matrix (nur geprüfte)
+        if finale_matrixen:
+            combined = np.zeros((8, 8), dtype=int)
+            for m in finale_matrixen:
+                combined = np.maximum(combined, m)
+
+            dataset_dir = os.path.join(os.path.dirname(os.path.dirname("dummy_path.jpg")), "Dataset")
+            matrix_dir = os.path.join(dataset_dir, "Matrix")
+            os.makedirs(matrix_dir, exist_ok=True)
+            matrix_path = os.path.join(matrix_dir, "Currentmatrix.txt")
+
+            buchstaben = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+            with open(matrix_path, 'w') as f:
+                f.write("adjacency_matrix = np.array([\n")
+                f.write("    # " + " ".join(buchstaben) + "\n")
+                for i, row in enumerate(combined):
+                    f.write(f"    {list(map(int, row))},  # {buchstaben[i]}\n")
+                f.write("])")
+
+            print(f"\n✅ Kombinierte Matrix (mit Walls) gespeichert unter: {matrix_path}")
+        else:
+            print("⚠️ Keine geprüften Matrizen zum Zusammenführen gefunden.")
 
     except Exception as e:
         print(f"Fehler: {str(e)}")
         import traceback
         traceback.print_exc()
-
