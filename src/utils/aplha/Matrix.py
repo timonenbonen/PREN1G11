@@ -39,6 +39,92 @@ class Objekt:
         return self.vertrauen >= schwellenwert
 
     @staticmethod
+    def log_barrier_assignment(barrier_obj, assigned_letter, image_path=None):
+        """
+        Ergänzt eine Textdatei mit Informationen über zugeordnete Barriers.
+
+        Args:
+            barrier_obj: Das Barrier-Objekt
+            assigned_letter: Der zugeordnete Buchstabe (A-H)
+            image_path: Pfad zum aktuellen Bild (optional, für Kontext)
+        """
+        import datetime
+        import os
+
+        # Bestimme den Pfad für die Log-Datei
+        if image_path:
+            base_dir = os.path.dirname(image_path)
+        else:
+            base_dir = os.path.join(os.path.dirname(os.path.dirname("dummy_path.jpg")), "Dataset")
+
+        log_path = os.path.join(base_dir, "Matrix/barrier_assignments.txt")
+
+        # Erstelle den Verzeichnispfad falls nötig
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+        # Zeitstempel
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Informationen sammeln
+        image_name = os.path.basename(image_path) if image_path else "Unbekannt"
+        barrier_info = {
+            'timestamp': timestamp,
+            'image': image_name,
+            'assigned_letter': assigned_letter,
+            'barrier_class': barrier_obj.klasse,
+            'confidence': barrier_obj.vertrauen,
+            'bounding_box': barrier_obj.bounding_box,
+            'center': barrier_obj.zentrum,
+            'area': barrier_obj.flaeche
+        }
+
+        # Eintrag in Datei schreiben (append mode)
+        try:
+            with open(log_path, 'a', encoding='utf-8') as f:
+                f.write(f"[{timestamp}] Barrier -> {assigned_letter}\n")
+                f.write(f"  Bild: {image_name}\n")
+                f.write(f"  Klasse: {barrier_info['barrier_class']}\n")
+                f.write(f"  Vertrauen: {barrier_info['confidence']}%\n")
+                f.write(f"  Bounding Box: {barrier_info['bounding_box']}\n")
+                f.write(f"  Zentrum: ({barrier_info['center'][0]:.1f}, {barrier_info['center'][1]:.1f})\n")
+                f.write(f"  Fläche: {barrier_info['area']:.1f}\n")
+                f.write("-" * 50 + "\n")
+
+            print(f"✅ Barrier-Zuweisung geloggt: {assigned_letter} -> {log_path}")
+
+        except Exception as e:
+            print(f"❌ Fehler beim Loggen der Barrier-Zuweisung: {str(e)}")
+
+    def set_buchstabe(self, buchstabe):
+        """Erweiterte set_buchstabe Methode mit Barrier-Logging"""
+        self.buchstabe = buchstabe
+
+        # Wenn es sich um eine Barrier handelt, logge die Zuweisung
+        if self.klasse == "barrier" and buchstabe:
+            # Versuche den aktuellen Bildpfad zu finden (falls verfügbar)
+            current_image = getattr(self, '_current_image_path', None)
+            Objekt.log_barrier_assignment(self, buchstabe, current_image)
+
+        return self
+
+    # Zusätzliche Hilfsmethode für Assignment-Funktionen
+    @staticmethod
+    def set_current_image_context(objekte_liste, image_path):
+        """
+        Setzt den aktuellen Bildkontext für alle Objekte (für besseres Logging)
+
+        Args:
+            objekte_liste: Liste der Objekte
+            image_path: Pfad zum aktuellen Bild
+        """
+        for obj in objekte_liste:
+            obj._current_image_path = image_path
+
+    # Beispiel für erweiterte Assignment-Methode (für assignment_B)
+
+
+
+    @staticmethod
     def create_adjacency_matrix(objekte_liste, connection_image_path, connection_threshold=0.15, bar_width=10):
         """Erstellt eine Adjazenzmatrix mit Analyse eines breiten Balkens zwischen Punkten.
         Ergänzt automatisch den Punkt, auf dem der Roboter steht (aus Bildname), falls nicht sichtbar.
@@ -692,6 +778,62 @@ class Objekt:
 
         return erkannte_punkte
 
+    @classmethod
+    def assignment_B(cls, objekte_liste):
+        """
+        Zuordnungslogik für B (Roboter befindet sich auf Punkt B):
+        1. Finde die 3 untersten Punkte
+        2. Sortiere sie nach X-Position und weise zu:
+           - C (links)
+           - H (mitte)
+           - A (rechts)
+        3. Gibt eine Liste der erkannten Punkte zurück
+        """
+        if not objekte_liste:
+            return []
+
+        # Liste für erkannte Punkte erstellen
+        erkannte_punkte = []
+
+        # Relevante Objekte (nur Punkte und Barrieren)
+        relevante_objekte = [
+            obj for obj in objekte_liste
+            if obj.klasse in ['point', 'pointa', 'pointb', 'pointc', 'barrier']
+        ]
+
+        if len(relevante_objekte) < 3:
+            print(
+                f"Warnung: Nur {len(relevante_objekte)} relevante Objekte gefunden, benötige mindestens 3 für assignment_B")
+            # Verarbeite trotzdem die vorhandenen Objekte
+            verfuegbare_objekte = relevante_objekte
+        else:
+            # Nach Y-Position sortieren (absteigend, unterster zuerst)
+            sortierte_objekte = sorted(relevante_objekte,
+                                       key=lambda obj: obj.zentrum[1],
+                                       reverse=True)
+
+            # Die 3 untersten Punkte nehmen
+            verfuegbare_objekte = sortierte_objekte[:3]
+
+        # Nach X-Position sortieren (aufsteigend, von links nach rechts)
+        verfuegbare_objekte.sort(key=lambda obj: obj.zentrum[0])
+
+        # Zuweisungen basierend auf verfügbaren Objekten
+        zuweisungen = ['C', 'H', 'A']  # Links, Mitte, Rechts
+
+        for i, obj in enumerate(verfuegbare_objekte):
+            if i < len(zuweisungen):
+                obj.set_buchstabe(zuweisungen[i])
+                erkannte_punkte.append(obj)
+                print(f"Info [assignment_B]: {zuweisungen[i]} zugewiesen an Position {i + 1} von links")
+
+        # Konsistenzprüfung
+        buchstaben = [getattr(obj, 'buchstabe', None) for obj in erkannte_punkte]
+        if len([b for b in buchstaben if b]) != len(set(b for b in buchstaben if b)):
+            print("Warnung: Doppelte Buchstaben in assignment_B erkannt!")
+
+        return erkannte_punkte
+
 
 
     @classmethod
@@ -896,7 +1038,11 @@ if __name__ == "__main__":
                     height, width = image.shape[:2]
                     erkannte = assignment_func(objekte, width, height)
                 else:
-                    erkannte = assignment_func(objekte)
+                    if hasattr(Objekt, f'assignment_{buchstabe}_with_logging'):
+                        erkannte = getattr(Objekt, f'assignment_{buchstabe}_with_logging')(objekte, bild_path)
+                    else:
+                        Objekt.set_current_image_context(objekte, bild_path)
+                        erkannte = assignment_func(objekte)
             else:
                 print(f"⚠️ Keine Assignment-Methode für Buchstabe {buchstabe} gefunden.")
                 erkannte = []
