@@ -1,0 +1,24 @@
+[2025-05-29 19:23:51] Barrier -> A
+  Bild: Unbekannt
+  Klasse: barrier
+  Vertrauen: 91.9%
+  Bounding Box: (2192, 874, 2337, 1372)
+  Zentrum: (2264.5, 1299.5)
+  Fläche: 72210.0
+--------------------------------------------------
+[2025-05-29 19:23:53] Barrier -> A
+  Bild: Unbekannt
+  Klasse: barrier
+  Vertrauen: 91.9%
+  Bounding Box: (2192, 874, 2337, 1372)
+  Zentrum: (2264.5, 1299.5)
+  Fläche: 72210.0
+--------------------------------------------------
+[2025-05-29 19:23:54] Barrier -> A
+  Bild: Unbekannt
+  Klasse: barrier
+  Vertrauen: 91.9%
+  Bounding Box: (2192, 874, 2337, 1372)
+  Zentrum: (2264.5, 1299.5)
+  Fläche: 72210.0
+--------------------------------------------------
