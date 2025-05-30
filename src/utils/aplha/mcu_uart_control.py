@@ -181,97 +181,203 @@ class MCUCommunicator:
         self.disconnect()
 
 # --- Hauptlogik / Beispielverwendung ---
+# --- Hauptlogik / Beispielverwendung ---
 if __name__ == "__main__":
-    # Erstelle eine Instanz des MCUCommunicators
-    # Passe Port, Baudrate und Timeout bei Bedarf an
-    # Für Windows wäre der Port z.B. 'COM3'
-    # Für Raspberry Pi typischerweise '/dev/ttyS0' oder '/dev/serial0'
-    # Für Linux allgemein oft '/dev/ttyUSB0' oder '/dev/ttyACM0' für USB-Seriell-Adapter
 
-    # Verwendung mit 'with'-Statement (empfohlen, da es das disconnect() automatisch handhabt)
-    try:
-        with MCUCommunicator(port='/dev/serial0', baudrate=9600, timeout=3.0) as mcu:
-            if not mcu.is_connected:
-                print("MCU konnte nicht verbunden werden. Programm wird beendet.")
-                exit()
+    # WÄHLE DEN TESTMODUS:
+    # "LOOPBACK" für den Selbsttest mit verbundenem TX und RX (GPIO14 an GPIO15)
+    # "MCU" für die Kommunikation mit einem echten externen MCU
+    TEST_MODE = "LOOPBACK"  # Ändere dies zu "MCU" für den normalen Betrieb
 
-            print("\n--- Teste 'Ideales Fahren' Befehlskette ---")
-            # Beispiel: "l,1,1;r,2,0;l,2,1;"
-            ideal_commands = [
-                ('l', 1, '1'),
-                ('r', 2, '0'),
-                ('l', 2, '1')
-            ]
-            response = mcu.send_ideal_driving_command_chain(ideal_commands)
-            if response == "end;":
-                print("MCU hat die Befehlskette erfolgreich beendet.")
-            elif response == "unknown;":
-                print("MCU hat einen unbekannten Befehl in der Kette empfangen.")
-            elif response == "obstructed;":
-                print("MCU hat ein Hindernis während der idealen Fahrt erkannt.")
-            elif response:
-                print(f"Unerwartete Antwort von idealer Fahrt: {response}")
+    if TEST_MODE == "LOOPBACK":
+        print("****************************************************")
+        print("***         STARTE UART LOOPBACK-TEST          ***")
+        print("*** Stelle sicher, dass GPIO14 (TX) mit       ***")
+        print("*** GPIO15 (RX) auf dem Raspberry Pi verbunden ***")
+        print("*** ist! Kein externer MCU darf angeschlossen  ***")
+        print("*** sein.                                      ***")
+        print("****************************************************\n")
 
-            time.sleep(1) # Kurze Pause zwischen den Testsequenzen
+        # Für Loopback verwenden wir denselben Port, typischerweise /dev/serial0
+        loopback_port = '/dev/serial0'
+        # Baudrate und Timeout sind für Loopback weniger kritisch, aber konsistent halten
+        loopback_baud = 9600
+        loopback_timeout = 1.0 # Antwort sollte sofort kommen
 
-            print("\n--- Teste Spezialbefehle ---")
+        try:
+            with MCUCommunicator(port=loopback_port, baudrate=loopback_baud, timeout=loopback_timeout) as mcu_lb:
+                if not mcu_lb.is_connected:
+                    print(f"Loopback: Verbindung auf {loopback_port} fehlgeschlagen. Programm wird beendet.")
+                    exit()
+                else:
+                    print(f"Loopback: Verbindung auf {loopback_port} erfolgreich hergestellt.")
 
-            # Beispiel: Links drehen für 500ms
-            print("\nSende: Links drehen für 500ms")
-            response = mcu.send_turn_l_duration(500)
-            # Hier die Antwort verarbeiten, z.B. auf "end;" warten
-            if response == "end;":
-                print("Links drehen beendet.")
-            else:
-                print(f"Antwort auf Links drehen: {response}")
+                # Test 1: Einfacher roher Befehl
+                # Erwartung: Der gesendete Befehl wird direkt wieder empfangen.
+                cmd_to_send1 = "test,loop,1;"
+                print(f"\nLoopback Test 1: Sende '{cmd_to_send1}'")
+                response1 = mcu_lb._send_and_receive_raw_command(cmd_to_send1)
 
-            time.sleep(1)
+                if response1 == cmd_to_send1:
+                    print(f"Loopback Test 1 ERFOLGREICH: Empfangen '{response1}'")
+                else:
+                    print(f"Loopback Test 1 FEHLGESCHLAGEN: Erwartet '{cmd_to_send1}', Empfangen '{response1}'")
+                    # Puffer leeren für nächsten Test, falls etwas unerwartet empfangen wurde
+                    if mcu_lb.ser and mcu_lb.ser.in_waiting > 0:
+                        mcu_lb.ser.read(mcu_lb.ser.in_waiting) # Lese und verwerfe verbleibende Bytes
 
-            # Beispiel: Linie folgen
-            print("\nSende: Linie folgen")
-            response = mcu.send_follow_line()
-            if response == "obstructed;":
-                print("Hindernis beim Linienfolgen erkannt!")
-                # Laut Doku: "The MCU awaits instructions from the raspy."
-                # Hier könnte man z.B. zurückfahren:
-                # print("Sende: Rückwärts fahren nach Hindernis")
-                # response_back = mcu.send_drive_backwards()
-                # print(f"Antwort auf Rückwärtsfahren: {response_back}")
-            elif response == "end;":
-                 print("Linienfolgen beendet.")
-            else:
-                print(f"Antwort auf Linie folgen: {response}")
+                time.sleep(0.5)
 
-            time.sleep(1)
+                # Test 2: "Ideales Fahren" Einzelbefehl
+                # Die Methode send_ideal_driving_command erstellt "l,0,0;"
+                print("\nLoopback Test 2: Sende 'Ideal Driving Command' ('l', 0, '0')")
+                expected_cmd2 = "l,0,0;"
+                response2 = mcu_lb.send_ideal_driving_command('l', 0, '0')
+                if response2 == expected_cmd2:
+                    print(f"Loopback Test 2 ERFOLGREICH: Empfangen '{response2}'")
+                else:
+                    print(f"Loopback Test 2 FEHLGESCHLAGEN: Erwartet '{expected_cmd2}', Empfangen '{response2}'")
+                    if mcu_lb.ser and mcu_lb.ser.in_waiting > 0:
+                        mcu_lb.ser.read(mcu_lb.ser.in_waiting)
 
-            # Beispiel: Rechts drehen bis zur nächsten Linie
-            print("\nSende: Rechts drehen bis zur nächsten Linie")
-            response = mcu.send_turn_r_to_next_line()
-            if response == "end;": # Oder eine andere Bestätigung, dass die Linie erreicht wurde
-                print("Nächste Linie rechts erreicht.")
-                # Laut Doku: "Send "back;" to reset position."
-                # print("Sende: 'back;' um Position zurückzusetzen")
-                # reset_response = mcu.send_reset_position_after_turn_to_line()
-                # print(f"Antwort auf 'back;': {reset_response}")
-            elif response == "obstructed;":
-                print("Hindernis beim Drehen zur nächsten Linie rechts.")
-            else:
-                print(f"Antwort auf Rechts drehen zu Linie: {response}")
+                time.sleep(0.5)
+
+                # Test 3: "Ideales Fahren" Befehlskette
+                # WICHTIG: _send_and_receive_raw_command liest nur bis zum ERSTEN Semikolon.
+                # Daher wird bei einer Kette nur der erste Befehl der Kette als Antwort erwartet.
+                print("\nLoopback Test 3: Sende 'Ideal Driving Command Chain'")
+                ideal_commands_lb = [
+                    ('r', 1, '1'), # Dieser wird gesendet und als erster Teil der Antwort erwartet
+                    ('0', 2, '0'), # Dieser wird auch gesendet, aber nicht sofort gelesen
+                    ('l', 0, '1')  # Dieser wird auch gesendet, aber nicht sofort gelesen
+                ]
+                # Der erste Befehl in der Kette ist 'r,1,1;'
+                expected_cmd3_first_part = "r,1,1;"
+                # Die gesamte gesendete Kette wird "r,1,1;0,2,0;l,0,1;" sein
+                full_chain_sent = "r,1,1;0,2,0;l,0,1;"
+
+                response3 = mcu_lb.send_ideal_driving_command_chain(ideal_commands_lb)
+
+                if response3 == expected_cmd3_first_part:
+                    print(f"Loopback Test 3 ERFOLGREICH: Erster Teil der Kette empfangen '{response3}'")
+                    # Der Rest der Kette ("0,2,0;l,0,1;") sollte noch im Eingangspuffer sein.
+                    # Wir können versuchen, ihn manuell zu lesen.
+                    if mcu_lb.ser and mcu_lb.ser.in_waiting > 0:
+                        time.sleep(0.1) # Kleine Pause um sicherzustellen, dass alles da ist
+                        remaining_bytes = mcu_lb.ser.read(mcu_lb.ser.in_waiting)
+                        remaining_str = remaining_bytes.decode('utf-8').strip()
+                        expected_remaining = "0,2,0;l,0,1;" # Was wir erwarten, was noch im Puffer ist
+                        print(f"Loopback Test 3: Rest im Puffer: '{remaining_str}'")
+                        if remaining_str == expected_remaining:
+                             print("Loopback Test 3: Restlicher Teil der Kette korrekt im Puffer gefunden.")
+                        else:
+                             print(f"Loopback Test 3: FEHLER beim restlichen Teil. Erwartet '{expected_remaining}', gefunden '{remaining_str}'")
+                    else:
+                        print("Loopback Test 3: Kein weiterer Teil der Kette im Puffer gefunden (unerwartet).")
+                else:
+                    print(f"Loopback Test 3 FEHLGESCHLAGEN: Erster Teil der Kette. Erwartet '{expected_cmd3_first_part}', Empfangen '{response3}'")
+                    if mcu_lb.ser and mcu_lb.ser.in_waiting > 0:
+                        mcu_lb.ser.read(mcu_lb.ser.in_waiting)
+
+                time.sleep(0.5)
+
+                # Test 4: Ein Spezialbefehl
+                print("\nLoopback Test 4: Sende 'Spezialbefehl' (Links drehen für 100ms)")
+                # send_turn_l_duration(100) generiert "0,10,100;"
+                expected_cmd4 = "0,10,100;"
+                response4 = mcu_lb.send_turn_l_duration(100)
+                if response4 == expected_cmd4:
+                    print(f"Loopback Test 4 ERFOLGREICH: Empfangen '{response4}'")
+                else:
+                    print(f"Loopback Test 4 FEHLGESCHLAGEN: Erwartet '{expected_cmd4}', Empfangen '{response4}'")
+                    if mcu_lb.ser and mcu_lb.ser.in_waiting > 0:
+                        mcu_lb.ser.read(mcu_lb.ser.in_waiting)
+
+                print("\nLoopback-Tests abgeschlossen.")
+
+        except serial.SerialException as e:
+            print(f"Loopback: Kritischer Fehler mit der seriellen Schnittstelle: {e}")
+        except Exception as e:
+            print(f"Loopback: Ein unerwarteter Fehler ist aufgetreten: {e}")
+
+        print("\n****************************************************")
+        print("***          LOOPBACK-TEST BEENDET             ***")
+        print("*** Entferne die Kabelverbindung GPIO14-GPIO15 ***")
+        print("*** bevor du mit einem echten MCU testest!     ***")
+        print("****************************************************")
 
 
-            # Beispiel: Unbekannter Befehl (manuell gesendet, nicht über eine Methode)
-            # print("\n--- Teste unbekannten Befehl ---")
-            # unknown_command_str = "X,Y,Z;"
-            # response = mcu._send_and_receive_raw_command(unknown_command_str) # Nutze die private Methode für rohe Befehle
-            # if response == "unknown;":
-            #     print("MCU hat den unbekannten Befehl korrekt als 'unknown;' gemeldet.")
-            # else:
-            #     print(f"Antwort auf unbekannten Befehl: {response}")
+    elif TEST_MODE == "MCU":
+        print("****************************************************")
+        print("***       STARTE MCU KOMMUNIKATIONSTEST        ***")
+        print("*** Stelle sicher, dass der MCU korrekt         ***")
+        print("*** angeschlossen und bereit ist.              ***")
+        print("****************************************************\n")
+        # Dein ursprünglicher Code für den MCU-Test:
+        try:
+            with MCUCommunicator(port='/dev/serial0', baudrate=9600, timeout=3.0) as mcu: # Port anpassen falls nötig
+                if not mcu.is_connected:
+                    print("MCU konnte nicht verbunden werden. Programm wird beendet.")
+                    exit()
+
+                print("\n--- Teste 'Ideales Fahren' Befehlskette ---")
+                ideal_commands = [
+                    ('l', 1, '1'),
+                    ('r', 2, '0'),
+                    ('l', 2, '1')
+                ]
+                response = mcu.send_ideal_driving_command_chain(ideal_commands)
+                if response == "end;":
+                    print("MCU hat die Befehlskette erfolgreich beendet.")
+                elif response == "unknown;":
+                    print("MCU hat einen unbekannten Befehl in der Kette empfangen.")
+                elif response == "obstructed;":
+                    print("MCU hat ein Hindernis während der idealen Fahrt erkannt.")
+                elif response:
+                    print(f"Unerwartete Antwort von idealer Fahrt: {response}")
+                else: # response ist None oder leer
+                    print("Keine oder ungültige Antwort von idealer Fahrt.")
 
 
-    except serial.SerialException as e:
-        print(f"Kritischer Fehler mit der seriellen Schnittstelle: {e}")
-    except Exception as e:
-        print(f"Ein unerwarteter Fehler ist aufgetreten: {e}")
+                time.sleep(1)
+
+                print("\n--- Teste Spezialbefehle ---")
+                print("\nSende: Links drehen für 500ms")
+                response = mcu.send_turn_l_duration(500)
+                if response == "end;":
+                    print("Links drehen beendet.")
+                else:
+                    print(f"Antwort auf Links drehen: {response if response else 'Keine Antwort'}")
+
+                time.sleep(1)
+
+                print("\nSende: Linie folgen")
+                response = mcu.send_follow_line()
+                if response == "obstructed;":
+                    print("Hindernis beim Linienfolgen erkannt!")
+                elif response == "end;":
+                    print("Linienfolgen beendet.")
+                else:
+                    print(f"Antwort auf Linie folgen: {response if response else 'Keine Antwort'}")
+
+                time.sleep(1)
+
+                print("\nSende: Rechts drehen bis zur nächsten Linie")
+                response = mcu.send_turn_r_to_next_line()
+                if response == "end;":
+                    print("Nächste Linie rechts erreicht.")
+                elif response == "obstructed;":
+                    print("Hindernis beim Drehen zur nächsten Linie rechts.")
+                else:
+                    print(f"Antwort auf Rechts drehen zu Linie: {response if response else 'Keine Antwort'}")
+
+        except serial.SerialException as e:
+            print(f"MCU-Test: Kritischer Fehler mit der seriellen Schnittstelle: {e}")
+        except Exception as e:
+            print(f"MCU-Test: Ein unerwarteter Fehler ist aufgetreten: {e}")
+
+    else:
+        print(f"Unbekannter TEST_MODE: {TEST_MODE}. Wähle 'LOOPBACK' oder 'MCU'.")
+
 
     print("\nProgramm beendet.")
