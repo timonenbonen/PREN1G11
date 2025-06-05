@@ -1,7 +1,7 @@
 import input_handler
 import output_handler
 import communication
-
+import RPi.GPIO as GPIO
 
 # process_image.py
 import requests
