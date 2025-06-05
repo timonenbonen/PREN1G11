@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 import requests
 import cv2
 import numpy as np
-
+import time
 
 
 
