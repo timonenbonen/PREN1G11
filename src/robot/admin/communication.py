@@ -57,6 +57,6 @@ def wait_for_start():
 def read_position():
     bit0 = GPIO.input(25)
     bit1 = GPIO.input(8)
-    start = GPIO.input(24)
+    start = GPIO.input(24) == GPIO.HIGH
     return ([bit0, bit1, start])
 
