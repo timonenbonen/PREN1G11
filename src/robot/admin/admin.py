@@ -9,9 +9,14 @@ import cv2
 import numpy as np
 
 
+def test():
+    communication.flash_led(3,0.2)
+
+
 
 
 def process():
+    communication.wait_for_start()
     image_path = capture_picture_from_api()
 
 
@@ -35,5 +40,6 @@ def process():
 
 
 if __name__ == "__main__":
-    result = process()
+    test()
+    ##result = process()
     print(f"Processed image saved to: {result}")
