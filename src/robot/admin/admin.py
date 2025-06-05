@@ -50,6 +50,8 @@ def reset_tof():
     time.sleep(1)
     GPIO.output(7, GPIO.LOW)
     time.sleep(1)
+    GPIO.output(7, GPIO.HIGH)
+    time.sleep(1)
 
 if __name__ == "__main__":
     reset_tof()
