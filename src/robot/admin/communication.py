@@ -7,9 +7,9 @@ from datetime import datetime
 # Setup GPIO only once
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(23, GPIO.OUT)  # LED flash
-GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Start button
-GPIO.setup(25, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Position bit 0
-GPIO.setup(8, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)   # Position bit 1
+GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Start button
+GPIO.setup(25, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Position bit 0
+GPIO.setup(8, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # Position bit 1
 
 def calculate_route():
     try:
@@ -55,11 +55,10 @@ def wait_for_start():
     print("Start signal received!")
 
 def read_position():
-    for i in range(28):
-        print(GPIO.input(i))
+
     bit0 = GPIO.input(25)
     bit1 = GPIO.input(8)
     start = GPIO.input(24) == GPIO.HIGH
 
-    return ("end")
+    return ([bit0, bit1], start)
 
