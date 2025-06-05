@@ -4,6 +4,12 @@ import serial
 import requests
 from datetime import datetime
 
+GPIO.setmode(GPIO.BCM)
+
+
+GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Start button
+GPIO.setup(23, GPIO.OUT)
+
 def calculate_route():
     try:
         response = requests.post("http://host.docker.internal:8000/take_picture", timeout=10)
