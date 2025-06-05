@@ -8,6 +8,8 @@ import requests
 import cv2
 import numpy as np
 
+GPIO.setup(23, GPIO.OUT)
+
 
 def test():
     communication.flash_led(3,0.2)
@@ -39,10 +41,15 @@ def process():
     cv2.imwrite(result_path, edges)
 
     return result_path
-
+def reset_tof():
+    GPIO.output(7, GPIO.LOW)
+    time.sleep(10)
+    GPIO.output(7, GPIO.HIGH)
 
 if __name__ == "__main__":
+    reset_tof()
     GPIO.setmode(GPIO.BCM)
+
     print(test())
     GPIO.cleanup()
 
