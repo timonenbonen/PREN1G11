@@ -12,7 +12,7 @@ import numpy as np
 def test():
     communication.flash_led(3,0.2)
 
-    communication.send_uart_command("0,10,1000;")
+    communication.send_uart_command("0,51,0;")
     return communication.read_position()
 
 
