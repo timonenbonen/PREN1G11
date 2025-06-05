@@ -51,12 +51,19 @@ def reset_tof():
 if __name__ == "__main__":
     reset_tof()
     GPIO.setmode(GPIO.BCM)
+    first = 0
+    second = 10
+    third = 1000
     while True:
-        uart_command = input("Enter uart command: ")
-        if uart_command == "exit":
+        first = input("Enter first:")
+        second = input("Enter second:")
+        third = input("Enter third:")
+        if first == "exit":
             break
-        print(test(uart_command))
-
+        if second.isnumeric() and third.isnumeric():
+            print(test(f"{first},{second},{third};"))
+        else:
+            print(f"{first},{second},{third}; wrong input")
     GPIO.cleanup()
 
     ##result = process()
