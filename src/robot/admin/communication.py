@@ -55,7 +55,6 @@ def wait_for_start():
     print("Start signal received!")
 
 def read_position():
-    0,1,2,3,4,5,6,7,8,9,10,11,12
     for i in range(28):
         print(GPIO.input(i))
     bit0 = GPIO.input(25)
