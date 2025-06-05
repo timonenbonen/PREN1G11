@@ -11,10 +11,10 @@ import time
 
 
 
-def test():
+def test(uart_command):
     communication.flash_led(3,0.2)
 
-    communication.send_uart_command("0,51,0;")
+    communication.send_uart_command(uart_command)
     return communication.read_position()
 
 
@@ -51,8 +51,12 @@ def reset_tof():
 if __name__ == "__main__":
     reset_tof()
     GPIO.setmode(GPIO.BCM)
+    while True:
+        uart_command = input("Enter uart command: ")
+        if uart_command == "exit":
+            break
+        print(test(uart_command))
 
-    print(test())
     GPIO.cleanup()
 
     ##result = process()
