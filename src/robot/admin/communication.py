@@ -25,7 +25,7 @@ def calculate_route():
 def send_uart_command(command):
     try:
         ser = serial.Serial("/dev/serial0", 9600, timeout=1)
-        ser.write((command + "\n").encode())  # Optional newline
+        ser.write((command + "\r\n").encode())  # Optional newline
         ser.close()
     except serial.SerialException as e:
         print(f"[Communication] UART error: {e}")
