@@ -12,6 +12,8 @@ import numpy as np
 def test():
     communication.flash_led(3,0.2)
 
+    communication.send_uart_command("0,10,1000;")
+    return communication.read_position()
 
 
 
@@ -41,5 +43,7 @@ def process():
 
 if __name__ == "__main__":
     GPIO.setmode(GPIO.BCM)
-    test()
+    print(test())
+    GPIO.cleanup()
+
     ##result = process()
