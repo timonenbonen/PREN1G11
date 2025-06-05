@@ -52,6 +52,7 @@ def log_event(source, level, message, payload=None):
 
 
 def flash_led(times=3, duration=0.2):
+    GPIO.setmode(GPIO.BCM)
     for _ in range(times):
         GPIO.output(23, GPIO.HIGH)
         time.sleep(duration)
