@@ -14,6 +14,7 @@ def calculate_route():
         print(f"[Communication] Route API error: {e}")
         return "error", []
 
+
 def send_uart_command(command):
     #if command not in ["TURN", "DRIVE", "STOP", ]:
       #  print(f"[Communication] Invalid command: {command}")

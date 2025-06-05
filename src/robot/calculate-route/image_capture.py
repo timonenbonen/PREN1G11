@@ -5,7 +5,7 @@ import os
 import requests
 import subprocess
 
-IMAGE_DIR = os.path.join(os.path.dirname(__file__), "images")
+IMAGE_DIR = "/home/timon/PREN1G11/images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 def log_event(source, level, message, payload=None):

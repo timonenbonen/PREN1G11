@@ -5,8 +5,14 @@ from datetime import datetime
 import os
 import json
 from typing import Optional
+from fastapi.staticfiles import StaticFiles
+
 
 app = FastAPI()
+
+
+IMAGE_DIR = "/home/timon/PREN1G11/src/robot/calculate-route/images"
+app.mount("/images", StaticFiles(directory="/home/timon/PREN1G11/images"), name="images")
 
 LOG_DIR = "/logs"
 os.makedirs(LOG_DIR, exist_ok=True)

@@ -1,23 +1,39 @@
 import input_handler
 import output_handler
 import communication
+from src.robot.admin.communication import calculate_route
 
-def main():
-    print("Admin ready. Waiting for start...")
+# process_image.py
+import requests
+import cv2
+import numpy as np
 
-    # Placeholder until GPIO is hooked up
-    if input_handler.wait_for_start_button():
-        print("Starting run process...")
 
-        route_status, path = communication.calculate_route()
 
-        if route_status == "valid":
-            communication.send_uart_command(f"DRIVE:{path}")
-        else:
-            communication.send_uart_command("TURN")
-            output_handler.signal_error()
 
-        output_handler.signal_arrival()
+def process():
+    image_path = capture_picture_from_api()
+
+
+    processed_image_path = process_image(image_path)
+
+    model_path = "yoloModels/my_model.pt"
+
+    detector = YoloDetector(model_path)
+
+    detected_objects = detector.detect_and_save(image_path)
+
+    detector.save_to_txt(detected_objects, "/tmp/detected_objects.txt")
+    build_matrix_from_detection(txt_path, processed_image_path)
+
+    # Example image processing
+    edges = cv2.Canny(image, 100, 200)
+    result_path = "/tmp/edges.jpg"
+    cv2.imwrite(result_path, edges)
+
+    return result_path
+
 
 if __name__ == "__main__":
-    main()
+    result = process()
+    print(f"Processed image saved to: {result}")
