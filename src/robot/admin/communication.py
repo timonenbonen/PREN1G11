@@ -61,6 +61,7 @@ def flash_led(times=3, duration=0.2):
 
 # Read start signal
 def wait_for_start():
+    GPIO.setmode(GPIO.BCM)
     print("Waiting for start signal on GPIO 24...")
     while GPIO.input(24) == GPIO.HIGH:
         time.sleep(0.1)
