@@ -43,4 +43,3 @@ if __name__ == "__main__":
     GPIO.setmode(GPIO.BCM)
     test()
     ##result = process()
-    print(f"Processed image saved to: {result}")
