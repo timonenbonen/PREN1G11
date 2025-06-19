@@ -27,7 +27,7 @@ def detect_objects(image_path: str):
     print(detector)
     objects = detector.detect_and_save(image_path)
     print(objects)
-    detector.save_to_txt(objects, TXT_PATH)
+    print(detector.save_to_txt(objects, TXT_PATH))
     return objects
 
 
