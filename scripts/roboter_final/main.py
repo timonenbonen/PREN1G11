@@ -73,12 +73,11 @@ def traverse_graph():
         print(objects)
 
         matrix = Matrix.build_matrix_from_detection(TXT_PATH, image_path)
-        print(matrix)
         next_node = calculate_next_node(matrix, current_node, TARGET_NODES)
 
         if not next_node:
             print("❌ Kein Pfad gefunden. Abbruch.")
-            break
+            #break
         return None
         command = f"{current_node},{next_node},1000;"
         print(f"➡️ Sende Befehl: {command}")
