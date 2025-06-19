@@ -27,7 +27,7 @@ def detect_objects(image_path: str):
     print(detector)
     objects = detector.detect_and_save(image_path)
     print(objects)
-    print(detector.save_to_txt(objects, TXT_PATH))
+    detector.save_to_txt(objects, TXT_PATH)
     return objects
 
 
@@ -71,14 +71,15 @@ def traverse_graph():
 
         objects = detect_objects(image_path)
         print(objects)
-        return None
+
         matrix = Matrix.build_matrix_from_detection(TXT_PATH, image_path)
+        print(matrix)
         next_node = calculate_next_node(matrix, current_node, TARGET_NODES)
 
         if not next_node:
             print("❌ Kein Pfad gefunden. Abbruch.")
             break
-
+        return None
         command = f"{current_node},{next_node},1000;"
         print(f"➡️ Sende Befehl: {command}")
         communication.send_uart_command(command)
