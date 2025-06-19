@@ -18,8 +18,8 @@ def build_matrix_from_detection(txt_file_path: str, image_path: str) -> dict:
     # Buchstabe aus Dateiname extrahieren (z. B. test_G.jpg → G)
     match = re.search(r'_([A-Ha-h])(?:/.|_|\b)', os.path.basename(image_path))
     buchstabe = match.group(1).upper() if match else None
-    if not buchstabe:
-        raise ValueError("Konnte Buchstaben aus Bildnamen nicht extrahieren.")
+    #if not buchstabe:
+     #   raise ValueError("Konnte Buchstaben aus Bildnamen nicht extrahieren.")
 
     # Zuweisung durchführen (z. B. assignment_G)
     assignment_func = getattr(Objekt, f'assignment_{buchstabe}', None)
