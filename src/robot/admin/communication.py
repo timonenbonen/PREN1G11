@@ -22,7 +22,35 @@ def calculate_route():
         print(f"[Communication] Route API error: {e}")
         return "error", []
 
-def send_uart_command(command):
+def encode_drive_command(direction: str, line_skips: int, obstacle: bool) -> str:
+    assert direction in ['l', 'r', 'n']
+    return f"({direction},{line_skips},{int(obstacle)};)"
+
+
+def encode_special_command(code: int, action: int, value: int) -> str:
+    return f"(0,{code},{value};)"
+
+def turn_left(duration_ms: int) -> str:
+    return encode_special_command(10, 0, duration_ms)
+
+def turn_right(duration_ms: int) -> str:
+    return encode_special_command(11, 0, duration_ms)
+
+def turn_left_to_line(skip_count: int) -> str:
+    return encode_special_command(20, 0, skip_count)
+
+def turn_right_to_line(skip_count: int) -> str:
+    return encode_special_command(21, 0, skip_count)
+
+def follow_line() -> str:
+    return encode_special_command(50, 0, 0)
+
+def drive_backwards() -> str:
+    return encode_special_command(51, 0, 0)
+
+
+
+def send_uart_command(command: str):
     try:
         print(command)
         ser = serial.Serial("/dev/serial0", 9600, timeout=1)
@@ -30,6 +58,18 @@ def send_uart_command(command):
         ser.close()
     except serial.SerialException as e:
         print(f"[Communication] UART error: {e}")
+
+def handle_uart_response(response: str):
+    if response == "end;":
+        print("[MCU] Reached end of command.")
+        # Trigger next navigation step
+    elif response == "unknown;":
+        print("[MCU] Unknown command received. Consider retrying or debugging.")
+    elif response == "obstructed;":
+        print("[MCU] Unexpected obstacle detected!")
+        
+    else:
+        print(f"[MCU] Unhandled response: {response}")
 
 def log_event(source, level, message, payload=None):
     try:
@@ -56,10 +96,13 @@ def wait_for_start():
     print("Start signal received!")
 
 def read_position():
-
     bit0 = GPIO.input(25)
     bit1 = GPIO.input(8)
-    start = GPIO.input(24) == GPIO.HIGH
+    binary = (bit1 << 1) | bit0  # ergibt 0–3
 
-    return ([bit0, bit1], start)
-
+    mapping = {
+        1: "A",
+        2: "B",
+        3: "C",
+    }
+    return mapping.get(binary, "?")

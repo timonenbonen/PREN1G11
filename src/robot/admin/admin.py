@@ -8,6 +8,7 @@ import requests
 import cv2
 import numpy as np
 import time
+import Matrix
 
 
 
@@ -33,7 +34,7 @@ def process():
     detected_objects = detector.detect_and_save(image_path)
 
     detector.save_to_txt(detected_objects, "/tmp/detected_objects.txt")
-    build_matrix_from_detection(txt_path, processed_image_path)
+    Matrix.build_matrix_from_detection(txt_path, processed_image_path)
 
     # Example image processing
     edges = cv2.Canny(image, 100, 200)

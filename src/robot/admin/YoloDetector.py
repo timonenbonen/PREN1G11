@@ -64,3 +64,8 @@ class YoloDetector:
         with open(path, 'w', encoding='utf-8') as f:
             for obj in objects:
                 f.write(f"{obj.klasse};{obj.vertrauen:.1f}%;{obj.bounding_box};{obj.flaeche};{obj.zentrum};{obj.buchstabe or ''}\n")
+
+    def detect_and_save(self, image_path, save_path="/tmp/detected_objects.txt", confidence_threshold=0.3):
+        objects = self.detect(image_path, confidence_threshold)
+        self.save_to_txt(objects, save_path)
+        return objects
