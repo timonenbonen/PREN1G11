@@ -19,6 +19,7 @@ def log_event(source, level, message, payload=None):
     except Exception as e:
         print(f"[{source}] Logging failed: {e}")
 
+
 def capture_image():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     image_path = os.path.join(IMAGE_DIR, f"capture_{timestamp}.jpg")

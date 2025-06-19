@@ -65,6 +65,8 @@ def traverse_graph():
         print(f"📍 Aktueller Punkt: {current_node}")
 
         image_path = capture_picture_from_api()
+        print(image_path)
+        return None
         objects = detect_objects(image_path)
 
         matrix = Matrix.build_matrix_from_detection(TXT_PATH, image_path)
