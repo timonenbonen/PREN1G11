@@ -24,7 +24,9 @@ def reset_tof():
 
 def detect_objects(image_path: str):
     detector = YoloDetector(MODEL_PATH)
+    print(detector)
     objects = detector.detect_and_save(image_path)
+    print(objects)
     detector.save_to_txt(objects, TXT_PATH)
     return objects
 
@@ -64,11 +66,12 @@ def traverse_graph():
     while current_node not in TARGET_NODES:
         print(f"📍 Aktueller Punkt: {current_node}")
 
-        image_path = capture_picture_from_api()
+        image_path = capture_picture_from_api(current_node)
         print(image_path)
-        return None
-        objects = detect_objects(image_path)
 
+        objects = detect_objects(image_path)
+        print(objects)
+        return None
         matrix = Matrix.build_matrix_from_detection(TXT_PATH, image_path)
         next_node = calculate_next_node(matrix, current_node, TARGET_NODES)
 
