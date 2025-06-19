@@ -16,7 +16,7 @@ def build_matrix_from_detection(txt_file_path: str, image_path: str) -> dict:
     objekte = Objekt.parse_text_to_objects(txt_content)
 
     # Buchstabe aus Dateiname extrahieren (z. B. test_G.jpg → G)
-    match = re.search(r'_([A-Ha-h])(?:\.|_|\b)', os.path.basename(image_path))
+    match = re.search(r'_([A-Ha-h])(?:\/.|_|\b)', os.path.basename(image_path))
     buchstabe = match.group(1).upper() if match else None
     if not buchstabe:
         raise ValueError("Konnte Buchstaben aus Bildnamen nicht extrahieren.")
