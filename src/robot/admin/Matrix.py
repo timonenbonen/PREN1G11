@@ -1,6 +1,6 @@
 # matrix_builder.py
 
-from object_detector import Objekt
+from ErkannteObjekte import Objekt
 import os
 
 def build_matrix_from_detection(txt_file_path: str, image_path: str) -> None:
