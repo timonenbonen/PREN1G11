@@ -1,4 +1,4 @@
-from object_detector import Objekt
+from ErkannteObjekte import Objekt
 import os
 import re
 import cv2
