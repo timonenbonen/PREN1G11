@@ -101,8 +101,8 @@ def read_position():
     binary = (bit1 << 1) | bit0  # ergibt 0–3
 
     mapping = {
-        1: "B",
+        1: "C",
         2: "A",
-        3: "C",
+        3: "B",
     }
     return mapping.get(binary, "?")
