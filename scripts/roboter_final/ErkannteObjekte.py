@@ -69,6 +69,7 @@ class Objekt:
     def find_wall(objects: list, matrix: dict, obj_letters: list):
         print("🚧 Wall-Erkennung übersprungen (Dummy-Modus).")
 
+    @staticmethod
     def assignment_E(cls, objekte_liste):
         """
         Zuordnungslogik für E, D, F und G:
@@ -137,6 +138,7 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
     def assignment_D(cls, objekte_liste):
         """
         Zuordnungslogik für D (Roboter befindet sich auf Punkt D):
@@ -187,6 +189,7 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
     def assignment_F(cls, objekte_liste, image_width, image_height):
         """
         Zuordnungslogik für F (Roboter befindet sich auf Punkt F):
@@ -239,6 +242,7 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
     def assignment_G(cls, objekte_liste, image_width, image_height):  # <-- NEUE PARAMETER
         """
         Zuordnungslogik für G (Roboter befindet sich auf Punkt G):
@@ -302,6 +306,7 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
     def assignment_C(cls, objekte_liste):
         """
         Zuordnungslogik für C (Roboter befindet sich auf Punkt C):
@@ -361,6 +366,7 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
     def assignment_H(cls, objekte_liste):
         """
         Zuordnungslogik für H (Roboter befindet sich auf Punkt H):
@@ -416,6 +422,7 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
     def assignment_A(cls, objekte_liste):
         """
         Zuordnungslogik für A (Roboter befindet sich auf Punkt A):
@@ -481,6 +488,7 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
     def assignment_B(cls, objekte_liste):
         """
         Zuordnungslogik für B (Roboter befindet sich auf Punkt B):
