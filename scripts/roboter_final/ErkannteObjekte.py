@@ -70,7 +70,7 @@ class Objekt:
         print("🚧 Wall-Erkennung übersprungen (Dummy-Modus).")
 
     @staticmethod
-    def assignment_E(cls, objekte_liste):
+    def assignment_E(objekte_liste):
         """
         Zuordnungslogik für E, D, F und G:
         1. E - unterster Punkt
@@ -139,7 +139,7 @@ class Objekt:
         return erkannte_punkte
 
     @staticmethod
-    def assignment_D(cls, objekte_liste):
+    def assignment_D(objekte_liste):
         """
         Zuordnungslogik für D (Roboter befindet sich auf Punkt D):
         1. C - rechtester Punkt
@@ -190,7 +190,7 @@ class Objekt:
         return erkannte_punkte
 
     @staticmethod
-    def assignment_F(cls, objekte_liste, image_width, image_height):
+    def assignment_F(objekte_liste, image_width, image_height):
         """
         Zuordnungslogik für F (Roboter befindet sich auf Punkt F):
         1. A - linkster Punkt
@@ -243,7 +243,7 @@ class Objekt:
         return erkannte_punkte
 
     @staticmethod
-    def assignment_G(cls, objekte_liste, image_width, image_height):  # <-- NEUE PARAMETER
+    def assignment_G(objekte_liste, image_width, image_height):  # <-- NEUE PARAMETER
         """
         Zuordnungslogik für G (Roboter befindet sich auf Punkt G):
         1. H - nächster Punkt zu G (angenommene Position: untere Mitte)
@@ -307,7 +307,7 @@ class Objekt:
         return erkannte_punkte
 
     @staticmethod
-    def assignment_C(cls, objekte_liste):
+    def assignment_C(objekte_liste):
         """
         Zuordnungslogik für C (Roboter befindet sich auf Punkt C):
         1. B - rechtester Punkt (wenn es pointb ist) oder einfach der rechteste Punkt generell
@@ -367,7 +367,7 @@ class Objekt:
         return erkannte_punkte
 
     @staticmethod
-    def assignment_H(cls, objekte_liste):
+    def assignment_H(objekte_liste):
         """
         Zuordnungslogik für H (Roboter befindet sich auf Punkt H):
         1. B - wenn ein Objekt als pointb erkannt wurde, sonst das nächste Objekt zu H
@@ -423,7 +423,7 @@ class Objekt:
         return erkannte_punkte
 
     @staticmethod
-    def assignment_A(cls, objekte_liste):
+    def assignment_A(objekte_liste):
         """
         Zuordnungslogik für A (Roboter befindet sich auf Punkt A):
         1. B - linkster Punkt
@@ -489,7 +489,7 @@ class Objekt:
         return erkannte_punkte
 
     @staticmethod
-    def assignment_B(cls, objekte_liste):
+    def assignment_B(objekte_liste):
         """
         Zuordnungslogik für B (Roboter befindet sich auf Punkt B):
         1. Finde die 3 untersten Punkte
