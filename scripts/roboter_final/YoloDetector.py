@@ -66,4 +66,5 @@ class YoloDetector:
     def detect_and_save(self, image_path, save_path="/tmp/detected_objects.txt", confidence_threshold=0.3):
         objects = self.detect(image_path, confidence_threshold)
         self.save_to_txt(objects, save_path)
+        print(f"Klasse erkannt: {classname}, Vertrauen: {conf:.1f}%, Box: ({xmin}, {ymin}, {xmax}, {ymax})")
         return objects
