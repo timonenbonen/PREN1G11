@@ -55,7 +55,7 @@ class YoloDetector:
             klass = self.labels[cls_id]
             obj = Objekt(klass, conf * 100, (x1, y1, x2, y2))
             detected_objects.append(obj)
-            print(f"Klasse erkannt: {classname}, Vertrauen: {conf:.1f}%, Box: ({xmin}, {ymin}, {xmax}, {ymax})")
+            print(f"Klasse erkannt: {klass}, Vertrauen: {conf:.1f}%, Box: ({xmin}, {ymin}, {xmax}, {ymax})")
         return detected_objects
 
     def save_to_txt(self, objects, path):
