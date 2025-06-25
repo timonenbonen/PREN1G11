@@ -536,5 +536,18 @@ class Objekt:
 
         return erkannte_punkte
 
+    @staticmethod
+    def set_current_image_context(objekte_liste, image_path):
+        """
+        Setzt den aktuellen Bildkontext für alle Objekte (für besseres Logging)
+
+        Args:
+            objekte_liste: Liste der Objekte
+            image_path: Pfad zum aktuellen Bild
+        """
+        for obj in objekte_liste:
+            obj._current_image_path = image_path
+
+    # Beispiel für erweiterte Assignment-Methode (für assignment_B)
 
 
