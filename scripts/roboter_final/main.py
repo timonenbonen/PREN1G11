@@ -60,7 +60,7 @@ def calculate_next_node(matrix, current_node, target_nodes):
 
 def traverse_graph():
     current_node = START_NODE
-    communication.wait_for_start()
+    # communication.wait_for_start()
     print("🚦 Start empfangen – Traversierung beginnt")
 
     while current_node not in TARGET_NODES:
