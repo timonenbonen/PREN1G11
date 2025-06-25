@@ -29,6 +29,10 @@ class Objekt:
         mapping = {'pointa': 'A', 'pointb': 'B', 'pointc': 'C'}
         self.buchstabe = mapping.get(self.klasse)
 
+    def set_buchstabe(self, buchstabe):
+        self.buchstabe = buchstabe
+        return self
+
     @staticmethod
     def parse_text_to_objects(txt_content: str) -> list:
         objects = []
