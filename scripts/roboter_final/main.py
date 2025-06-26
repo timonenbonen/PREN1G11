@@ -5,11 +5,13 @@ import communication
 from get_picture import capture_picture_from_api
 from YoloDetector import YoloDetector
 import Matrix
+import lineDetection
 
 START_NODE = "E"
 TARGET_NODES = ["A", "B", "C"]
 MODEL_PATH = "my_model.pt"
 TXT_PATH = "/tmp/detected_objects.txt"
+TEST_PICTURES = "/pictures/"
 
 
 def reset_tof():
@@ -58,7 +60,13 @@ def calculate_next_node(matrix, current_node, target_nodes):
     return None
 
 
+def blub():
+    test_picture: str = "image1.jpg"
+    objects = detect_objects(TEST_PICTURES+test_picture)
+    print(objects)
+
 def traverse_graph():
+
     current_node = START_NODE
     # communication.wait_for_start()
     print("🚦 Start empfangen – Traversierung beginnt")
@@ -70,9 +78,10 @@ def traverse_graph():
         print(image_path)
 
         objects = detect_objects(image_path)
+        processed_image_path: str = lineDetection.process_image(image_path)
         print(objects)
 
-        matrix = Matrix.build_matrix_from_detection(TXT_PATH, image_path)
+        matrix = Matrix.build_matrix_from_detection(TXT_PATH, processed_image_path)
         next_node = calculate_next_node(matrix, current_node, TARGET_NODES)
 
         if not next_node:
@@ -93,8 +102,9 @@ def traverse_graph():
 
 if __name__ == "__main__":
     try:
-        reset_tof()
-        traverse_graph()
+        #reset_tof()
+        #traverse_graph()
+        blub()
     finally:
-        GPIO.cleanup()
+        #GPIO.cleanup()
         print("🧹 GPIO aufgeräumt")
