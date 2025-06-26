@@ -82,6 +82,7 @@ def traverse_graph():
         print(objects)
 
         matrix = Matrix.build_matrix_from_detection(TXT_PATH, processed_image_path)
+        print(matrix)
         next_node = calculate_next_node(matrix, current_node, TARGET_NODES)
 
         if not next_node:
