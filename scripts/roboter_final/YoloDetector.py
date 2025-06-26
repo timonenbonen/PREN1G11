@@ -36,7 +36,7 @@ class YoloDetector:
         self.model = YOLO(model_path)
         self.labels = self.model.names
 
-    def detect(self, image_path, confidence_threshold=0.3):
+    def detect(self, image_path, confidence_threshold=0.1):
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"Image not found: {image_path}")
 
