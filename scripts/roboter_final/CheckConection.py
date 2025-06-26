@@ -102,6 +102,20 @@ def check_connection(
         return 0
 
 
+def get_turn_direction(obj: Objekt, image_width: int, toleranz_pixel: int = 10) -> str:
+    """Bestimmt, ob ein Objekt links, rechts oder in der Mitte des Bildes liegt."""
+    bildmitte_x = image_width / 2
+    objekt_x = obj.zentrum[0]
+
+    if objekt_x < bildmitte_x - (toleranz_pixel / 2):
+        return "links"
+    elif objekt_x > bildmitte_x + (toleranz_pixel / 2):
+        return "rechts"
+    else:
+        return "mitte"
+
+
+
 # --- Beispiel für die Verwendung ---
 if __name__ == "__main__":
     lade_objekte_in_globale_liste(dummy_path)
