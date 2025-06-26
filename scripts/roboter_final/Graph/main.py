@@ -1,0 +1,15 @@
+import Graph_loader
+from Graph import Graph
+from Cylinder import Cylinder  # your Cylinder class
+
+if __name__ == "__main__":
+    nodes, edges = Graph_loader.load_nodes_and_edges()
+
+    graph = Graph(
+        current_node=nodes["A"],
+        target_node=nodes["H"],
+        nodes=nodes,
+        edges=edges
+    )
+
+    graph.adjust_graph_with_canvas()
