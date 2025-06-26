@@ -36,7 +36,7 @@ class YoloDetector:
         self.model = YOLO(model_path)
         self.labels = self.model.names
 
-    def detect(self, image_path, confidence_threshold=0.1):
+    def detect(self, image_path, confidence_threshold=0.01):
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"Image not found: {image_path}")
 
@@ -63,8 +63,8 @@ class YoloDetector:
             for obj in objects:
                 f.write(f"{obj.klasse};{obj.vertrauen:.1f}%;{obj.bounding_box};{obj.flaeche};{obj.zentrum};{obj.buchstabe or ''}\n")
 
-    def detect_and_save(self, image_path, save_path="/tmp/detected_objects.txt", confidence_threshold=0.3):
-        objects = self.detect(image_path, confidence_threshold)
+    def detect_and_save(self, image_path, save_path="/tmp/detected_objects.txt"):
+        objects = self.detect(image_path)
         self.save_to_txt(objects, save_path)
 
         return objects
