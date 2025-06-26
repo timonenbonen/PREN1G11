@@ -102,9 +102,9 @@ def traverse_graph():
 
 if __name__ == "__main__":
     try:
-        #reset_tof()
-        #traverse_graph()
-        blub()
+        reset_tof()
+        traverse_graph()
+        #blub()
     finally:
-        #GPIO.cleanup()
+        GPIO.cleanup()
         print("🧹 GPIO aufgeräumt")
