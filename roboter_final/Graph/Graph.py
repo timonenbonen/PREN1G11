@@ -3,7 +3,6 @@ from roboter_final.Graph.Cylinder import Cylinder
 from roboter_final.Graph.Box import Box
 import heapq
 from roboter_final.Graph import Graph_loader
-from roboter_final.Graph.CanvasInterface import CanvasInterface
 
 canvas_size = 800
 relation_height_length = 330 / 280
@@ -154,12 +153,12 @@ class Graph:
 
         return vrml
 
-    def adjust_graph_with_canvas(self):
+    ##def adjust_graph_with_canvas(self):
 
 
 
-        editor = CanvasInterface(graph=self, canvas_size=canvas_size, possible_target_nodes=self.possible_target_nodes,
-                                 canvas_webots_relation=canvas_webots_relation)
-        editor.run_loop()
+        ##editor = CanvasInterface(graph=self, canvas_size=canvas_size, possible_target_nodes=self.possible_target_nodes,
+        ##                         canvas_webots_relation=canvas_webots_relation)
+        ##editor.run_loop()
 
 
