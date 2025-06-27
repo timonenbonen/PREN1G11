@@ -27,12 +27,16 @@ class Box(Shape):
         position_node_1: tuple[float, float] = self.node1.get_x_y()
         position_node_2: tuple[float, float] = self.node2.get_x_y()
         return (position_node_1[0] + position_node_2[0]) / 2, (position_node_1[1] + position_node_2[1]) / 2, 0
-
+    def set_has_obstacle(self, has_obstacle: bool):
+        self.has_obstacle = bool(has_obstacle)
     def change_has_obstacle(self):
         self.has_obstacle = not self.has_obstacle
 
     def change_is_removed(self):
         self.is_removed = not self.is_removed
+
+    def set_is_removed(self, is_removed: bool):
+        self.is_removed = bool(is_removed)
 
     def get_has_obstacle(self) -> bool:
         return self.has_obstacle

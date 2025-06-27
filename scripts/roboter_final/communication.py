@@ -52,12 +52,33 @@ def drive_backwards() -> str:
 
 def send_uart_command(command: str):
     try:
-        print(command)
-        ser = serial.Serial("/dev/serial0", 9600, timeout=1)
-        ser.write((command + "\n").encode())  # Optional newline
-        ser.close()
+        print(f"[UART] Sending command: {command}")
+        with serial.Serial("/dev/serial0", 9600, timeout=1) as ser:
+            ser.reset_input_buffer()
+            ser.write((command + "\n").encode())
+
+            start_time = time.time()
+            timeout_seconds = 5  # Adjust as needed
+
+            while True:
+                if ser.in_waiting:
+                    response = ser.readline().decode().strip()
+                    if response:
+                        print(f"[UART] Received response: {response}")
+                        handle_uart_response(response)
+                        print("uart", "info", "Received UART response", {"response": response})
+                        break  # Continue program only after receiving a response
+
+                if time.time() - start_time > timeout_seconds:
+                    print("[UART] Timeout waiting for response from MCU.")
+                    print("uart", "error", "Timeout waiting for response from MCU")
+                    break  # Or raise an exception if needed
+
+                time.sleep(0.1)
     except serial.SerialException as e:
         print(f"[Communication] UART error: {e}")
+        print("uart", "error", "UART communication failed", {"exception": str(e)})
+
 
 def handle_uart_response(response: str):
     if response == "end;":

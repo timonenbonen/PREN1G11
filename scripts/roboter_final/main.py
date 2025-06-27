@@ -13,6 +13,7 @@ import os
 from CheckConection import  CheckConnection
 from Graph.Graph import Graph
 from src.utils.aplha.lineDetection import process_image
+from DegreeInMs import Degree2Milliseconds
 
 START_NODE = "E"
 TARGET_NODES = ["A", "B", "C"]
@@ -41,31 +42,6 @@ def detect_objects(image_path: str):
     return objects
 
 
-def dijkstra_shortest_path(matrix: dict, start: str, targets: list) -> list:
-    visited = set()
-    heap = [(0, start, [start])]
-
-    while heap:
-        cost, node, path = heapq.heappop(heap)
-        if node in visited:
-            continue
-        visited.add(node)
-
-        if node in targets:
-            return path
-
-        for neighbor in matrix.get(node, []):
-            if neighbor not in visited:
-                heapq.heappush(heap, (cost + 1, neighbor, path + [neighbor]))
-
-    return []  # Kein Pfad gefunden
-
-
-def calculate_next_node(matrix, current_node, target_nodes):
-    path = dijkstra_shortest_path(matrix, current_node, target_nodes)
-    if len(path) >= 2:
-        return path[1]  # nächster Schritt
-    return None
 
 def drive_with_direction(direction):
         if direction == "links":
@@ -79,6 +55,20 @@ def drive_with_direction(direction):
             communication.encode_special_command(0,50,0)
 
 
+def align_with_next_edge(graph:Graph, current_orientation:float):
+    edge:str = graph.calculate_shortest_path()[1][0]
+    new_orientation: float = graph.edges[edge].get_length_and_angle()[1]
+    difference: float = new_orientation - current_orientation
+    difference = (difference + 180) % 360 - 180
+    difference_in_ms: int = Degree2Milliseconds.turn_degrees_to_ms(difference)
+    if abs(difference) < 5:
+        print("✅ Already aligned – no turn needed")
+    elif difference < 0:
+        communication.turn_left_to_line(difference_in_ms)
+    elif difference > 0:
+        communication.turn_right_to_line(difference_in_ms)
+    return edge[2], new_orientation
+
 
 
 
@@ -87,14 +77,15 @@ def traverse_graph():
     graph = Graph(target_node)
 
     next_node = None
-
-
-
+    current_orientation: float = 0
     current_node = START_NODE
     # communication.wait_for_start()
     print("🚦 Start empfangen – Traversierung beginnt")
 
     while current_node not in TARGET_NODES:
+
+        next_node, current_orientation = align_with_next_edge(graph, current_orientation)
+
         print(f"📍 Aktueller Punkt: {current_node}")
 
         #Graph liefert fastest_node
@@ -106,13 +97,13 @@ def traverse_graph():
         processed_image_path: str = lineDetection.process_image(image_path)
         print(objects)
 
-        checkConnection = CheckConnection(processed_image_path, TXT_PATH)
+        check_connection = CheckConnection(processed_image_path, TXT_PATH)
         line_status = checkConection.check_connection()
 
         print(line_status)
         if line_status == 0:
             print("neues Tages")
-            graph.edges[f"{graph.current_node.name}_{next_node}"].is_removed
+            graph.edges[f"{graph.current_node.name}_{next_node}"].set_is_removed(True)
 
         elif line_status == 1:
             print("fahren, keine wall")
@@ -132,13 +123,7 @@ def traverse_graph():
             else:
                 # Wenn der Node nicht drin ist, hinzufügen
                 FLAGS.append(next_node)
-                graph.edges[f"{graph.current_node.name}_{next_node}"].has_obstacle
-
-
-
-
-
-
+                graph.edges[f"{graph.current_node.name}_{next_node}"].set_has_obstacle(True)
 
 
 

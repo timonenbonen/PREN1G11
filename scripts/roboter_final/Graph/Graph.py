@@ -85,8 +85,8 @@ class Graph:
 
         return width, height
 
-    def calculate_shortest_path(self, max_velocity_in_ms: float, acceleration_in_ms2: float,
-                                breaking_speed_in_ms2: float, align_time_in_s:float) -> tuple[list, list]:
+    def calculate_shortest_path(self, max_velocity_in_ms: float = max_velocity_in_ms, acceleration_in_ms2: float = acceleration_in_ms2,
+                                breaking_speed_in_ms2: float = breaking_speed_in_ms2, align_time_in_s:float = align_time_in_ms) -> tuple[list, list]:
         """
         Calculates the shortest path between starting_node and target_node using Dijkstra's algorithm.
 

@@ -6,8 +6,7 @@ if __name__ == "__main__":
     nodes, edges = Graph_loader.load_nodes_and_edges()
 
     graph = Graph(
-        current_node=nodes["A"],
-        target_node=nodes["H"],
+        target_node="A",
         nodes=nodes,
         edges=edges
     )
