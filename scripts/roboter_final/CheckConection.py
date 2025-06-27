@@ -99,7 +99,6 @@ class CheckConnection:
             return "links"
         elif objekt_x > bildmitte_x + (toleranz_pixel / 2):
             return "rechts"
-
         else:
             return "mitte"
 

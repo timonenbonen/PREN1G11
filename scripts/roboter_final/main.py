@@ -1,19 +1,25 @@
 import time
 import RPi.GPIO as GPIO
 import heapq
+
+from scipy.optimize import direct
+
 import communication
 from get_picture import capture_picture_from_api
 from YoloDetector import YoloDetector
 import Matrix
 import lineDetection
 import os
+from CheckConection import  CheckConnection
+from Graph.Graph import Graph
+from src.utils.aplha.lineDetection import process_image
 
 START_NODE = "E"
 TARGET_NODES = ["A", "B", "C"]
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "my_model.pt")
 TXT_PATH = os.path.join(BASE_DIR, "dataset", "detected_objects.txt")
-PICTURES = os.path.join(BASE_DIR, "pictures")
+PICTURES = os.path.join(BASE_DIR, "dataset")
 
 def reset_tof():
     GPIO.setmode(GPIO.BCM)
@@ -60,9 +66,27 @@ def calculate_next_node(matrix, current_node, target_nodes):
         return path[1]  # nächster Schritt
     return None
 
+def drive_with_direction(direction):
+        if direction == "links":
+            communication.turn_left_to_line(0)
+            communication.encode_special_command(0,50,0)
+
+        elif direction == "mitte":
+            communication.encode_special_command(0,50,0)
+        elif direction == "rechts":
+            communication.turn_right_to_line(0)
+            communication.encode_special_command(0,50,0)
+
+
 
 
 def traverse_graph():
+    target_node = communication.read_position()
+    graph = Graph(target_node)
+
+    next_node = None
+
+
 
     current_node = START_NODE
     # communication.wait_for_start()
@@ -78,9 +102,26 @@ def traverse_graph():
         processed_image_path: str = lineDetection.process_image(image_path)
         print(objects)
 
-        matrix = Matrix.build_matrix_from_detection(TXT_PATH, processed_image_path)
-        print(matrix)
-        next_node = calculate_next_node(matrix, current_node, TARGET_NODES)
+        checkConnection = CheckConnection(processed_image_path, TXT_PATH)
+        line_status = checkConection.check_connection()
+
+        print(line_status)
+        if line_status == 0:
+            print("neues Tages")
+        elif line_status == 1:
+            print("fahren keine wall")
+            direction = checkConnection.get_turn_direction()
+            drive(direction)
+
+
+        elif line_status == 2:
+            graph.edges[f"{graph.current_node.name}_{next_node}"].has_obstacle
+            #flag falls wir alle checken und mit wall fahren müssen
+
+
+
+
+
 
         if not next_node:
             print("❌ Kein Pfad gefunden. Abbruch.")
@@ -90,8 +131,8 @@ def traverse_graph():
         print(f"➡️ Sende Befehl: {command}")
         communication.send_uart_command(command)
 
-        current_node = communication.read_position()
-        print(f"✅ Neue Position: {current_node}")
+        #current_node = communication.read_position()
+        #print(f"✅ Neue Position: {current_node}")
 
         time.sleep(1)
 
