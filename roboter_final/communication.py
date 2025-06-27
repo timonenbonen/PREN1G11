@@ -61,11 +61,19 @@ def send_uart_command(command: str):
             start_time = time.time()
             timeout_seconds = 30
 
+            waiting_for_final_response = False
+
             while True:
                 if ser.in_waiting:
                     response = ser.readline().decode().strip()
                     if response:
                         print(f"[UART] Received response: {response}")
+
+                        if response == "ok;":
+                            print("[MCU] Command acknowledged. Waiting for completion...")
+                            waiting_for_final_response = True  # Wait for "end;" or "obstructed;"
+                            continue
+
                         handle_uart_response(response)
                         print("uart", "info", "Received UART response", {"response": response})
                         break
@@ -76,6 +84,7 @@ def send_uart_command(command: str):
                     break
 
                 time.sleep(0.1)
+
     except serial.SerialException as e:
         print(f"[Communication] UART error: {e}")
         print("uart", "error", "UART communication failed", {"exception": str(e)})
@@ -83,11 +92,10 @@ def send_uart_command(command: str):
 
 def handle_uart_response(response: str):
     if response == "end;":
-        print("[MCU] Reached end of command.")
-    elif response == "unknown;":
-        print("[MCU] Unknown command received. Consider retrying or debugging.")
+        print("[MCU] Command completed successfully.")
     elif response == "obstructed;":
-        print("[MCU] Unexpected obstacle detected!")
+        print("[MCU] Unexpected obstacle detected! Handle accordingly.")
+
     else:
         print(f"[MCU] Unhandled response: {response}")
 
