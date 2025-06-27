@@ -97,7 +97,7 @@ def traverse_graph():
         print(objects)
 
         check_connection = CheckConnection(processed_image_path, TXT_PATH)
-        line_status = checkConection.check_connection()
+        line_status = check_connection.check_connection()
 
         print(line_status)
         if line_status == 0:
