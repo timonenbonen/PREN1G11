@@ -81,6 +81,7 @@ def drive_with_direction(direction):
 
 
 
+
 def traverse_graph():
     target_node = communication.read_position()
     graph = Graph(target_node)
@@ -124,7 +125,10 @@ def traverse_graph():
             if next_node in FLAGS:
                 # Nur Kommunikation setzen, kein Hinzufügen
                 print("Fahren mit Wall ist die beste Option")
-                communication.encode_special_command(0, 50, 1)
+                direction = checkConnection.get_turn_direction()
+                drive(direction)
+                graph.set_current_node(next_node)
+
             else:
                 # Wenn der Node nicht drin ist, hinzufügen
                 FLAGS.append(next_node)
@@ -144,9 +148,7 @@ def traverse_graph():
             print("❌ Kein Pfad gefunden. Abbruch.")
             #break
         return None
-        command = f"{current_node},{next_node},1000;"
-        print(f"➡️ Sende Befehl: {command}")
-        communication.send_uart_command(command)
+
 
         #current_node = communication.read_position()
         #print(f"✅ Neue Position: {current_node}")
@@ -154,6 +156,7 @@ def traverse_graph():
         time.sleep(1)
 
     print(f"🎉 Ziel erreicht: {current_node}")
+    communication.flash_led(5,1)
 
 
 if __name__ == "__main__":
