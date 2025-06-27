@@ -1,6 +1,6 @@
 import subprocess
 
-def capture_picture_from_api(save_path="/tmp/picture.jpg") -> str:
+def capture_picture_from_api(save_path="../pictures/picture.jpg") -> str:
     """
     Nimmt ein Bild direkt mit libcamera-still auf.
     Rückgabe: Pfad zur Bilddatei

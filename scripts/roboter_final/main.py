@@ -6,13 +6,14 @@ from get_picture import capture_picture_from_api
 from YoloDetector import YoloDetector
 import Matrix
 import lineDetection
+import os
 
 START_NODE = "E"
 TARGET_NODES = ["A", "B", "C"]
-MODEL_PATH = "my_model.pt"
-TXT_PATH = "../dataset/detected_objects.txt"
-TEST_PICTURES = "../pictures/"
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "my_model.pt")
+TXT_PATH = os.path.join(BASE_DIR, "dataset", "detected_objects.txt")
+PICTURES = os.path.join(BASE_DIR, "pictures")
 
 def reset_tof():
     GPIO.setmode(GPIO.BCM)
@@ -60,10 +61,6 @@ def calculate_next_node(matrix, current_node, target_nodes):
     return None
 
 
-def blub():
-    test_picture: str = "image1.jpg"
-    objects = detect_objects(TEST_PICTURES+test_picture)
-    print(objects)
 
 def traverse_graph():
 
@@ -74,7 +71,7 @@ def traverse_graph():
     while current_node not in TARGET_NODES:
         print(f"📍 Aktueller Punkt: {current_node}")
 
-        image_path = capture_picture_from_api(f"../dataset/Picture_{current_node}.jpg")
+        image_path = capture_picture_from_api(f"{PICTURES}_{current_node}.jpg")
         print(image_path)
 
         objects = detect_objects(image_path)
@@ -105,7 +102,6 @@ if __name__ == "__main__":
     try:
         reset_tof()
         traverse_graph()
-        #blub()
     finally:
         GPIO.cleanup()
         print("🧹 GPIO aufgeräumt")
