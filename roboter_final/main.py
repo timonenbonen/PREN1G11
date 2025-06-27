@@ -43,13 +43,13 @@ def detect_objects(image_path: str):
 def drive_with_direction(direction):
         if direction == "links":
             communication.turn_left_to_line(0)
-            communication.encode_special_command(0, 50, 0)
+            communication.special_command(0, 50, 0)
 
         elif direction == "mitte":
-            communication.encode_special_command(0, 50, 0)
+            communication.special_command(0, 50, 0)
         elif direction == "rechts":
             communication.turn_right_to_line(0)
-            communication.encode_special_command(0, 50, 0)
+            communication.special_command(0, 50, 0)
 
 
 def align_with_next_edge(graph:Graph, current_orientation:float):
@@ -117,8 +117,8 @@ def traverse_graph():
             if next_node in FLAGS:
                 # Nur Kommunikation setzen, kein Hinzufügen
                 print("Fahren mit Wall ist die beste Option")
-                direction = checkConnection.get_turn_direction()
-                drive(direction)
+                direction = check_connection.get_turn_direction()
+                drive_with_direction(direction)
                 graph.set_current_node(next_node)
 
             else:
@@ -143,7 +143,7 @@ def traverse_graph():
 
         time.sleep(1)
 
-    print(f"🎉 Ziel erreicht: {current_node}")
+    print(f"🎉 Ziel erreicht: {graph.current_node}")
     communication.flash_led(5, 1)
 
 
