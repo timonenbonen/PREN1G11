@@ -74,7 +74,7 @@ def traverse_graph():
     while current_node not in TARGET_NODES:
         print(f"📍 Aktueller Punkt: {current_node}")
 
-        image_path = capture_picture_from_api(f"/tmp/Picture_{current_node}.jpg")
+        image_path = capture_picture_from_api(f"../dataset/Picture_{current_node}.jpg")
         print(image_path)
 
         objects = detect_objects(image_path)
