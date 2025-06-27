@@ -1,8 +1,8 @@
 # graph_loader.py
 
 from typing import Dict, Tuple
-from Cylinder import Cylinder
-from Box import Box
+from roboter_final.Graph.Cylinder import Cylinder
+from roboter_final.Graph.Box import Box
 import json
 from typing import cast
 # You can also use a JSON file for this, but Python dicts give more flexibility.

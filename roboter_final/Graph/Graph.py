@@ -1,6 +1,6 @@
 from typing import Dict
 from roboter_final.Graph.Cylinder import Cylinder
-from Box import Box
+from roboter_final.Graph.Box import Box
 import heapq
 import Graph_loader
 from Graph.CanvasInterface import CanvasInterface
