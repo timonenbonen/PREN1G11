@@ -89,7 +89,7 @@ def traverse_graph():
 
         #Graph liefert fastest_node
 
-        image_path = capture_picture_from_api(os.path.join(PICTURES, "{graph.current_node.name}.jpg"))
+        image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
         print(image_path)
 
