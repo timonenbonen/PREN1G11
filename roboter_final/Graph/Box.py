@@ -1,5 +1,5 @@
-from Shape import Shape
-from Cylinder import Cylinder
+from roboter_final.Graph.Shape import Shape
+from roboter_final.Graph.Cylinder import Cylinder
 import math
 
 

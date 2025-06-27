@@ -1,4 +1,4 @@
-from Shape import Shape
+from roboter_final.Graph.Shape import Shape
 
 
 class Cylinder(Shape):
