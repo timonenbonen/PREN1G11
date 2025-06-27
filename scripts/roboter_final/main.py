@@ -20,6 +20,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "my_model.pt")
 TXT_PATH = os.path.join(BASE_DIR, "dataset", "detected_objects.txt")
 PICTURES = os.path.join(BASE_DIR, "dataset")
+FLAGS = []
 
 def reset_tof():
     GPIO.setmode(GPIO.BCM)
@@ -95,6 +96,8 @@ def traverse_graph():
     while current_node not in TARGET_NODES:
         print(f"📍 Aktueller Punkt: {current_node}")
 
+        #Graph liefert fastest_node
+
         image_path = capture_picture_from_api(f"{PICTURES}_{current_node}.jpg")
         print(image_path)
 
@@ -108,15 +111,29 @@ def traverse_graph():
         print(line_status)
         if line_status == 0:
             print("neues Tages")
+            graph.edges[f"{graph.current_node.name}_{next_node}"].is_removed
+
         elif line_status == 1:
-            print("fahren keine wall")
+            print("fahren, keine wall")
             direction = checkConnection.get_turn_direction()
             drive(direction)
 
 
         elif line_status == 2:
-            graph.edges[f"{graph.current_node.name}_{next_node}"].has_obstacle
-            #flag falls wir alle checken und mit wall fahren müssen
+
+            if next_node in FLAGS:
+                # Nur Kommunikation setzen, kein Hinzufügen
+                print("Fahren mit Wall ist die beste Option")
+                communication.encode_special_command(0, 50, 1)
+            else:
+                # Wenn der Node nicht drin ist, hinzufügen
+                FLAGS.append(next_node)
+                graph.edges[f"{graph.current_node.name}_{next_node}"].has_obstacle
+
+
+
+
+
 
 
 
