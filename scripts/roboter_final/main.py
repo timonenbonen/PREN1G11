@@ -10,8 +10,8 @@ import lineDetection
 START_NODE = "E"
 TARGET_NODES = ["A", "B", "C"]
 MODEL_PATH = "my_model.pt"
-TXT_PATH = "/tmp/detected_objects.txt"
-TEST_PICTURES = "/pictures/"
+TXT_PATH = "../dataset/detected_objects.txt"
+TEST_PICTURES = "../pictures/"
 
 
 def reset_tof():

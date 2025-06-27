@@ -63,7 +63,7 @@ class YoloDetector:
             for obj in objects:
                 f.write(f"{obj.klasse};{obj.vertrauen:.1f}%;{obj.bounding_box};{obj.flaeche};{obj.zentrum};{obj.buchstabe or ''}\n")
 
-    def detect_and_save(self, image_path, save_path="/tmp/detected_objects.txt"):
+    def detect_and_save(self, image_path, save_path="../dataset/detected_objects.txt"):
         objects = self.detect(image_path)
         self.save_to_txt(objects, save_path)
 
