@@ -24,36 +24,32 @@ def calculate_route():
 
 def encode_drive_command(direction: str, line_skips: int, obstacle: bool) -> str:
     assert direction in ['l', 'r', 'n']
-    send_uart_command(encode_special_command(direction, line_skips, int(obstacle)))
-    return f"({direction},{line_skips},{int(obstacle)};)"
+    command = f"({direction},{line_skips},{int(obstacle)};)"
+    send_uart_command(command)
+    return command
 
 
 def encode_special_command(code: int, action: int, value: int) -> str:
-    send_uart_command(encode_special_command(0,code,value))
-    return f"(0,{code},{value};)"
+    command = f"(0,{code},{action},{value};)"
+    send_uart_command(command)
+    return f"(0,{code},{action},{value};)"
 
 def turn_left(duration_ms: int) -> str:
-    send_uart_command(encode_special_command(10, 0, duration_ms))
     return encode_special_command(10, 0, duration_ms)
 
 def turn_right(duration_ms: int) -> str:
-    send_uart_command(encode_special_command(11, 0, duration_ms))
     return encode_special_command(11, 0, duration_ms)
 
 def turn_left_to_line(skip_count: int) -> str:
-    send_uart_command(encode_special_command(20, 0, skip_count))
     return encode_special_command(20, 0, skip_count)
 
 def turn_right_to_line(skip_count: int) -> str:
-    send_uart_command(encode_special_command(21, 0, skip_count))
     return encode_special_command(21, 0, skip_count)
 
 def follow_line() -> str:
-    send_uart_command(encode_special_command(50, 0, 0))
     return encode_special_command(50, 0, 0)
 
 def drive_backwards() -> str:
-    send_uart_command(encode_special_command(51, 0, 0))
     return encode_special_command(51, 0, 0)
 
 
