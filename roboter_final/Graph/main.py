@@ -6,4 +6,4 @@ if __name__ == "__main__":
 
     graph = Graph(target_node="A")
 
-    graph.adjust_graph_with_canvas()
+    #graph.adjust_graph_with_canvas()

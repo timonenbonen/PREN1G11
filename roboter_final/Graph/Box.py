@@ -21,7 +21,10 @@ class Box(Shape):
         x2, y2 = self.node2.get_x_y()
         dx: float = x2 - x1
         dy: float = y2 - y1
-        return (dx ** 2 + dy ** 2) ** 0.5, math.atan2(dy, dx)
+        length = (dx ** 2 + dy ** 2) ** 0.5
+        angle_rad = math.atan2(dy, dx)
+        angle_deg = math.degrees(angle_rad)
+        return length, angle_deg
 
     def get_position(self) -> tuple[float, float, float]:
         position_node_1: tuple[float, float] = self.node1.get_x_y()
