@@ -135,7 +135,7 @@ def traverse_graph():
         if not next_node:
             print("❌ Kein Pfad gefunden. Abbruch.")
             #break
-        return None
+
 
 
         #current_node = communication.read_position()
