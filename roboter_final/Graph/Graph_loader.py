@@ -5,6 +5,7 @@ from roboter_final.Graph.Cylinder import Cylinder
 from roboter_final.Graph.Box import Box
 import json
 from typing import cast
+import os
 # You can also use a JSON file for this, but Python dicts give more flexibility.
 
 # Position constants
@@ -17,9 +18,11 @@ node_between_x = 0.5
 node_side_top_y = 2.0
 node_side_bottom_y = 0.5
 node_top_y = 3.0
+script_dir = os.path.dirname(__file__)
+file_path = os.path.join(script_dir, 'graph_data.json')
 
 def load_nodes_and_edges() -> Tuple[Dict[str, Cylinder], Dict[str, Box]]:
-    with open("graph_data.json", 'r') as f:
+    with open(file_path, 'r') as f:
         data = json.load(f)
 
     node_positions = data["nodes"]
