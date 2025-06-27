@@ -25,29 +25,29 @@ def calculate_route():
 
 
 def special_command(code: int, action: int, value: int):
-    send_uart_command(f"({code},{action},{value};)")
+    send_uart_command(f"{code},{action},{value};")
 
 def turn_left(duration_ms: int):
-    send_uart_command(f"(0,10,{duration_ms};)")
+    send_uart_command(f"0,10,{duration_ms};")
 
 def turn_right(duration_ms: int):
-    send_uart_command(f"(0,11,{duration_ms};)")
+    send_uart_command(f"0,11,{duration_ms};")
 
 def turn_left_to_line(skip_count: int):
-    send_uart_command(f"(0,20,{skip_count};)")
+    send_uart_command(f"0,20,{skip_count};")
 
 def turn_right_to_line(skip_count: int):
-    send_uart_command(f"(0,21,{skip_count};)")
+    send_uart_command(f"0,21,{skip_count};")
 
 def follow_line():
-    send_uart_command(f"(0,50,0;)")
+    send_uart_command(f"0,50,0;")
 
 def drive_backwards():
-    send_uart_command(f"(0,51,0;)")
+    send_uart_command(f"0,51,0;")
 
 def drive(direction: str, line_skips: int, obstacle: bool):
     assert direction in ['l', 'r', 'n']
-    send_uart_command(f"({direction},{line_skips},{int(obstacle)};)")
+    send_uart_command(f"{direction},{line_skips},{int(obstacle)};")
 
 
 
