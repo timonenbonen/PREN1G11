@@ -33,13 +33,15 @@ align_time_in_ms: float = 1
 
 
 class Graph:
-    def __init__(self, current_node: Cylinder, target_node: Cylinder, nodes: Dict[str, Cylinder] = None,
+    def __init__(self, target_node: str, current_node: Cylinder = None, nodes: Dict[str, Cylinder] = None,
                  edges: Dict[str, Box] = None):
         if nodes is None or edges is None:
             nodes, edges = Graph_loader.load_nodes_and_edges()
+        if current_node is None:
+            self.current_node_node = nodes["E"]
         self.nodes: Dict[str, Cylinder] = nodes  # {node_id: (x, y)}
         self.edges: Dict[str, Box] = edges
-        self.target_node: Cylinder = target_node  # Target node IDs
+        self.target_node: Cylinder = nodes[target_node]  # Target node IDs
         self.target_node.set_base_color((0, 0, 1))
         self.current_node: Cylinder = current_node
         self.possible_target_nodes: list[Cylinder] = [nodes['F'], nodes['G'], nodes['H']]
@@ -48,6 +50,9 @@ class Graph:
         self.target_node.set_base_color((1, 1, 1))
         self.target_node = new_target_node
         self.target_node.set_base_color((0, 0, 1))
+
+    def set_current_node(self, new_node:str) -> None:
+        self.current_node = self.nodes[new_node]
 
     def get_edges(self) -> Dict[str, Box]:
         return self.edges
