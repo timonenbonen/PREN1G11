@@ -28,7 +28,7 @@ def reset_tof():
 def detect_objects(image_path: str):
     detector = YoloDetector(MODEL_PATH)
     print(detector)
-    objects = detector.detect_and_save(image_path)
+    objects = detector.detect_and_save(image_path=image_path,save_path=TXT_PATH)
     print(objects)
     detector.save_to_txt(objects, TXT_PATH)
     return objects
