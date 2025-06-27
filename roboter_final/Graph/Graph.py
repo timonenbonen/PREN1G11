@@ -103,7 +103,7 @@ class Graph:
                                                                           align_time=align_time_in_s)  # Get length of the edge
                     adjacency_list[node1].append((node2, time_to_traverse))
                     adjacency_list[node2].append((node1, time_to_traverse))
-
+        print(self.current_node)
         # Dijkstra's algorithm setup
         priority_queue = [(0, self.current_node.get_name(), [])]  # (distance, current_node, path_so_far)
         visited = set()
