@@ -85,11 +85,11 @@ def traverse_graph():
         print(graph.current_node)
         next_node, current_orientation = align_with_next_edge(graph, current_orientation)
 
-        print(f"📍 Aktueller Punkt: {current_node}")
+        print(f"📍 Aktueller Punkt: {graph.current_node}")
 
         #Graph liefert fastest_node
 
-        image_path = capture_picture_from_api(f"{PICTURES}_{current_node}.jpg")
+        image_path = capture_picture_from_api(f"{PICTURES}_{graph.current_node}.jpg")
         print(image_path)
 
         objects = detect_objects(image_path)
