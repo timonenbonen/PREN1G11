@@ -3,7 +3,7 @@ from roboter_final.Graph.Cylinder import Cylinder
 from roboter_final.Graph.Box import Box
 import heapq
 from roboter_final.Graph import Graph_loader
-from Graph.CanvasInterface import CanvasInterface
+from roboter_final.Graph.CanvasInterface import CanvasInterface
 
 canvas_size = 800
 relation_height_length = 330 / 280

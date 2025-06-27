@@ -1,6 +1,6 @@
 import tkinter as tk
-import Graph
-import Cylinder
+from roboter_final.Graph.Graph import Graph
+from roboter_final.Graph.Cylinder import Cylinder
 import math
 import json
 from typing import Any
