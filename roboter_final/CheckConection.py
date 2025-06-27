@@ -99,7 +99,7 @@ class CheckConnection:
                 if self._linien_schneiden(punkt1, punkt2, kante_start, kante_end): return True
         return False
 
-    def get_turn_direction(self, toleranz_pixel=10) -> str:
+    def get_turn_direction(self, toleranz_pixel=100) -> str:
         if not self.object_list: return "unbekannt"
         mittigstes_objekt = min(self.object_list, key=lambda o: np.linalg.norm(
             np.array(o.zentrum) - np.array([self.width / 2, self.height / 2])))
