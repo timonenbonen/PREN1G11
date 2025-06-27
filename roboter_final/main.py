@@ -76,13 +76,13 @@ def traverse_graph():
     next_node: str = "F"
     current_orientation: float = 0
 
-    current_node = graph.nodes[START_NODE]
-    print(current_node)
+    graph.set_current_node(START_NODE)
+
     # communication.wait_for_start()
     print("🚦 Start empfangen – Traversierung beginnt")
 
-    while current_node not in TARGET_NODES:
-        print(current_node)
+    while graph.current_node not in TARGET_NODES:
+        print(graph.current_node)
         next_node, current_orientation = align_with_next_edge(graph, current_orientation)
 
         print(f"📍 Aktueller Punkt: {current_node}")
