@@ -1,7 +1,6 @@
 import tkinter as tk
 import Graph
 import Cylinder
-import Box
 import math
 import json
 from typing import Any
