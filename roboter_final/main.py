@@ -82,7 +82,7 @@ def traverse_graph():
     print("🚦 Start empfangen – Traversierung beginnt")
 
     while current_node not in TARGET_NODES:
-
+        print(current_node)
         next_node, current_orientation = align_with_next_edge(graph, current_orientation)
 
         print(f"📍 Aktueller Punkt: {current_node}")
