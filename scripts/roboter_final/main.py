@@ -75,7 +75,7 @@ def traverse_graph():
     target_node = communication.read_position()
     graph = Graph(target_node)
 
-    next_node = None
+    next_node: str = "F"
     current_orientation: float = 0
     current_node = START_NODE
     # communication.wait_for_start()
@@ -125,6 +125,8 @@ def traverse_graph():
                 graph.edges[f"{graph.current_node.name}_{next_node}"].set_has_obstacle(True)
 
 
+        elif line_status == 3:
+            graph.nodes[next_node].change_is_blocked()
 
 
 

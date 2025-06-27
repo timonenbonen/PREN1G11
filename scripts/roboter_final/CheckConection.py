@@ -36,38 +36,54 @@ class CheckConnection:
     def check_connection(self, quadrat_threshold=0.2, balken_threshold=0.4, pixel_helligkeit=255,
                          balken_breite=10) -> int:
         if not self.object_list:
-            # KORREKTUR: Punkte zurücksetzen, bevor die Funktion beendet wird
             self.last_punkt1, self.last_punkt2 = None, None
             return 0
 
+        # Finde das "gefüllteste" Quadrat unten im Bild
         quadrate = [x + 5 for x in range(0, self.width - 10, 10) if np.sum(
             self.gray_image[self.height - 10:self.height, x:x + 10] < pixel_helligkeit) / 100.0 >= quadrat_threshold]
         if not quadrate:
-            # KORREKTUR: Punkte zurücksetzen, bevor die Funktion beendet wird
             self.last_punkt1, self.last_punkt2 = None, None
             return 0
         punkt1 = np.array([min(quadrate, key=lambda x: abs(x - self.width / 2)), self.height - 5])
 
-        mittigstes_objekt = min(self.object_list, key=lambda o: np.linalg.norm(
-            np.array(o.zentrum) - np.array([self.width / 2, self.height / 2])))
-        punkt2 = np.array(mittigstes_objekt.zentrum)
+        # Nur gültige Zielobjekte berücksichtigen
+        gueltige_klassen = {"point", "a", "b", "c"}
+        gueltige_objekte = [obj for obj in self.object_list if
+                            obj.klasse in gueltige_klassen or obj.klasse == "barrier"]
+        if not gueltige_objekte:
+            self.last_punkt1, self.last_punkt2 = None, None
+            return 0
 
-        # KORREKTUR: Gefundene Punkte als Klassenattribute speichern
+        # Mittigstes gültiges Objekt finden
+        mittigstes_objekt = min(gueltige_objekte, key=lambda o: np.linalg.norm(
+            np.array(o.zentrum) - np.array([self.width / 2, self.height / 2])))
+
+        # Falls es eine Barriere ist: Status 3
+        if mittigstes_objekt.klasse == 'barrier':
+            self.last_punkt1 = punkt1
+            self.last_punkt2 = np.array(mittigstes_objekt.zentrum)
+            return 3
+
+        punkt2 = np.array(mittigstes_objekt.zentrum)
         self.last_punkt1 = punkt1
         self.last_punkt2 = punkt2
 
-        # ... (Rest der Funktion bleibt unverändert)
+        # Verbindung prüfen
         vektor = punkt2 - punkt1
         laenge = np.linalg.norm(vektor)
         if laenge == 0:
             return 1
-        einheitsvektor, normalenvektor = vektor / laenge, np.array([-vektor[1], vektor[0]]) / laenge
+        einheitsvektor = vektor / laenge
+        normalenvektor = np.array([-vektor[1], vektor[0]]) / laenge
+
         nicht_weisse_pixel = sum(
             1 for t in range(int(laenge)) for w in range(-balken_breite // 2, balken_breite // 2 + 1)
             if 0 <= int(punkt1[0] + t * einheitsvektor[0] + w * normalenvektor[0]) < self.width and
             0 <= int(punkt1[1] + t * einheitsvektor[1] + w * normalenvektor[1]) < self.height and
-            self.gray_image[int(punkt1[1] + t * einheitsvektor[1] + w * normalenvektor[1]), int(
-                punkt1[0] + t * einheitsvektor[0] + w * normalenvektor[0])] < pixel_helligkeit)
+            self.gray_image[int(punkt1[1] + t * einheitsvektor[1] + w * normalenvektor[1]),
+            int(punkt1[0] + t * einheitsvektor[0] + w * normalenvektor[0])] < pixel_helligkeit)
+
         balken_ratio = nicht_weisse_pixel / (int(laenge) * balken_breite) if laenge > 0 else 0
         if balken_ratio >= balken_threshold:
             return 2 if self.check_wall_on_track(punkt1, punkt2) else 1
