@@ -61,9 +61,9 @@ def align_with_next_edge(graph:Graph, current_orientation:float):
     if abs(difference) < 1:
         print("✅ Already aligned – no turn needed")
     elif difference < 0:
-        communication.turn_left_to_line(difference_in_ms)
+        communication.turn_left(difference_in_ms)
     elif difference > 0:
-        communication.turn_right_to_line(difference_in_ms)
+        communication.turn_right(difference_in_ms)
     return edge[2], new_orientation
 
 
