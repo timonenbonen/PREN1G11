@@ -59,7 +59,7 @@ def send_uart_command(command: str):
             ser.write((command + "\n").encode())
 
             start_time = time.time()
-            timeout_seconds = 5
+            timeout_seconds = 30
 
             while True:
                 if ser.in_waiting:
