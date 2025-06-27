@@ -53,7 +53,7 @@ def drive_with_direction(direction):
 
 
 def align_with_next_edge(graph:Graph, current_orientation:float):
-    edge:str = graph.calculate_shortest_path()[1][0]
+    edge:str = graph.calculate_shortest_path()[1][1]
     new_orientation: float = graph.edges[edge].get_length_and_angle()[1]
     difference: float = new_orientation - current_orientation
     difference = (difference + 180) % 360 - 180
