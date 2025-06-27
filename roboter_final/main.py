@@ -109,7 +109,7 @@ def traverse_graph():
         elif line_status == 1:
             print("fahren, keine wall")
             direction = check_connection.get_turn_direction()
-            drive(direction)
+            drive_with_direction(direction)
 
 
         elif line_status == 2:
