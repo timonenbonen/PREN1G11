@@ -75,7 +75,9 @@ def traverse_graph():
 
     next_node: str = "F"
     current_orientation: float = 0
+
     current_node = graph.nodes[START_NODE]
+    print(current_node)
     # communication.wait_for_start()
     print("🚦 Start empfangen – Traversierung beginnt")
 
