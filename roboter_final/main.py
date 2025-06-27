@@ -58,7 +58,7 @@ def align_with_next_edge(graph:Graph, current_orientation:float):
     difference: float = new_orientation - current_orientation
     difference = (difference + 180) % 360 - 180
     difference_in_ms: int = Degree2Milliseconds.turn_degrees_to_ms(difference)
-    if abs(difference) < 5:
+    if abs(difference) < 1:
         print("✅ Already aligned – no turn needed")
     elif difference < 0:
         communication.turn_left_to_line(difference_in_ms)
@@ -87,7 +87,8 @@ def traverse_graph():
 
         print(f"📍 Aktueller Punkt: {graph.current_node}")
 
-        #Graph liefert fastest_node
+        #drehen zum next node
+
 
         image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
