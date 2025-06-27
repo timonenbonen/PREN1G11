@@ -9,9 +9,7 @@ from YoloDetector import YoloDetector
 import lineDetection
 import os
 from CheckConection import  CheckConnection
-from Graph.Graph import Graph
-from Graph.Cylinder import Cylinder
-from Graph.Box import Box
+from roboter_final.Graph.Graph import Graph
 from DegreeInMs import Degree2Milliseconds
 
 START_NODE = "E"
@@ -45,13 +43,13 @@ def detect_objects(image_path: str):
 def drive_with_direction(direction):
         if direction == "links":
             communication.turn_left_to_line(0)
-            communication.encode_special_command(0,50,0)
+            communication.encode_special_command(0, 50, 0)
 
         elif direction == "mitte":
-            communication.encode_special_command(0,50,0)
+            communication.encode_special_command(0, 50, 0)
         elif direction == "rechts":
             communication.turn_right_to_line(0)
-            communication.encode_special_command(0,50,0)
+            communication.encode_special_command(0, 50, 0)
 
 
 def align_with_next_edge(graph:Graph, current_orientation:float):
@@ -142,13 +140,16 @@ def traverse_graph():
         time.sleep(1)
 
     print(f"🎉 Ziel erreicht: {current_node}")
-    communication.flash_led(5,1)
+    communication.flash_led(5, 1)
 
 
-if __name__ == "__main__":
+def main():
     try:
         reset_tof()
         traverse_graph()
     finally:
         GPIO.cleanup()
         print("🧹 GPIO aufgeräumt")
+
+if __name__ == "__main__":
+    main()

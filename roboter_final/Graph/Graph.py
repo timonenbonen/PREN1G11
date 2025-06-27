@@ -1,10 +1,9 @@
-from typing import Dict, List
-from Cylinder import Cylinder
+from typing import Dict
+from roboter_final.Graph.Cylinder import Cylinder
 from Box import Box
-from Shape import Shape
 import heapq
 import Graph_loader
-from scripts.roboter_final.Graph.CanvasInterface import CanvasInterface
+from Graph.CanvasInterface import CanvasInterface
 
 canvas_size = 800
 relation_height_length = 330 / 280
