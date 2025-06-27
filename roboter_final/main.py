@@ -55,8 +55,12 @@ def drive_with_direction(direction):
 def align_with_next_edge(graph:Graph, current_orientation:float):
     edge:str = graph.calculate_shortest_path()[1][1]
     new_orientation: float = graph.edges[edge].get_length_and_angle()[1]
+    print(f"current_orientation:{current_orientation}, new_orienation:{new_orientation}")
+
     difference: float = new_orientation - current_orientation
+    print(f"difference:{difference}")
     difference = (difference + 180) % 360 - 180
+
     difference_in_ms: int = Degree2Milliseconds.turn_degrees_to_ms(difference)
     if abs(difference) < 1:
         print("✅ Already aligned – no turn needed")
