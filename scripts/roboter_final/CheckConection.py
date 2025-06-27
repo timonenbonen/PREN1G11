@@ -48,7 +48,7 @@ class CheckConnection:
         punkt1 = np.array([min(quadrate, key=lambda x: abs(x - self.width / 2)), self.height - 5])
 
         # Nur gültige Zielobjekte berücksichtigen
-        gueltige_klassen = {"point", "a", "b", "c"}
+        gueltige_klassen = {"point", "pointa", "pointb", "pointc"}
         gueltige_objekte = [obj for obj in self.object_list if
                             obj.klasse in gueltige_klassen or obj.klasse == "barrier"]
         if not gueltige_objekte:
