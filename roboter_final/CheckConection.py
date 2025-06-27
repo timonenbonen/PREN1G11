@@ -2,7 +2,7 @@
 import os
 import cv2
 import numpy as np
-from ErkannteObjekte import Objekt
+from roboter_final.ErkannteObjekte import Objekt
 
 
 class CheckConnection:
