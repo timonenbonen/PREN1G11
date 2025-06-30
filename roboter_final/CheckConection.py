@@ -32,57 +32,139 @@ class CheckConnection:
             print(f"FEHLER beim Laden der Objekte: {e}")
             return []
 
-    def check_connection(self, quadrat_threshold=0.2, balken_threshold=0.4, pixel_helligkeit=255,
-                         balken_breite=10) -> int:
-        if not self.object_list:
-            self.last_punkt1, self.last_punkt2 = None, None
-            return 0
+    def extract_blue_lines(self, image_bgr):
+        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
+        lower_blue = np.array([88, 20, 230])
+        upper_blue = np.array([92, 40, 255])
+        return cv2.inRange(hsv, lower_blue, upper_blue)
 
-        quadrate = [x + 5 for x in range(0, self.width - 10, 10) if np.sum(
-            self.gray_image[self.height - 10:self.height, x:x + 10] < pixel_helligkeit) / 100.0 >= quadrat_threshold]
-        if not quadrate:
-            self.last_punkt1, self.last_punkt2 = None, None
-            return 0
-        punkt1 = np.array([min(quadrate, key=lambda x: abs(x - self.width / 2)), self.height - 5])
+    def detect_lines(self, mask):
+        edges = cv2.Canny(mask, 50, 150)
+        return cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=30, maxLineGap=10)
 
-        gueltige_klassen = {"point", "pointa", "pointb", "pointc"}
-        gueltige_objekte = [obj for obj in self.object_list if
-                            obj.klasse in gueltige_klassen or obj.klasse == "barrier"]
-        if not gueltige_objekte:
-            self.last_punkt1, self.last_punkt2 = None, None
-            return 0
+    def line_to_angle_and_center(self, x1, y1, x2, y2):
+        angle = np.degrees(np.arctan2(y2 - y1, x2 - x1)) % 180
+        center = ((x1 + x2) / 2, (y1 + y2) / 2)
+        return angle, center
 
-        mittigstes_objekt = min(gueltige_objekte, key=lambda o: np.linalg.norm(
-            np.array(o.zentrum) - np.array([self.width / 2, self.height / 2])))
+    def merge_similar_lines(self, lines, angle_thresh=5.0, dist_thresh=1000.0):
+        if lines is None:
+            return []
 
-        if mittigstes_objekt.klasse == 'barrier':
-            self.last_punkt1 = punkt1
-            self.last_punkt2 = np.array(mittigstes_objekt.zentrum)
-            # ANNAHME: Barrier ist ein Sonderfall und wird als Status 3 zurückgegeben
-            return 3
+        merged = []
+        used = [False] * len(lines)
 
-        punkt2 = np.array(mittigstes_objekt.zentrum)
-        self.last_punkt1 = punkt1
-        self.last_punkt2 = punkt2
+        for i in range(len(lines)):
+            if used[i]:
+                continue
 
-        vektor = punkt2 - punkt1
-        laenge = np.linalg.norm(vektor)
-        if laenge == 0:
-            return 1
-        einheitsvektor = vektor / laenge
-        normalenvektor = np.array([-vektor[1], vektor[0]]) / laenge
+            x1_i, y1_i, x2_i, y2_i = lines[i][0]
+            angle_i, center_i = self.line_to_angle_and_center(x1_i, y1_i, x2_i, y2_i)
+            group = [(x1_i, y1_i, x2_i, y2_i)]
+            used[i] = True
 
-        nicht_weisse_pixel = sum(
-            1 for t in range(int(laenge)) for w in range(-balken_breite // 2, balken_breite // 2 + 1)
-            if 0 <= int(punkt1[0] + t * einheitsvektor[0] + w * normalenvektor[0]) < self.width and
-            0 <= int(punkt1[1] + t * einheitsvektor[1] + w * normalenvektor[1]) < self.height and
-            self.gray_image[int(punkt1[1] + t * einheitsvektor[1] + w * normalenvektor[1]),
-            int(punkt1[0] + t * einheitsvektor[0] + w * normalenvektor[0])] < pixel_helligkeit)
+            for j in range(i + 1, len(lines)):
+                if used[j]:
+                    continue
 
-        balken_ratio = nicht_weisse_pixel / (int(laenge) * balken_breite) if laenge > 0 else 0
-        if balken_ratio >= balken_threshold:
-            return 2 if self.check_wall_on_track(punkt1, punkt2) else 1
-        return 0
+                x1_j, y1_j, x2_j, y2_j = lines[j][0]
+                angle_j, center_j = self.line_to_angle_and_center(x1_j, y1_j, x2_j, y2_j)
+
+                angle_diff = min(abs(angle_i - angle_j), 180 - abs(angle_i - angle_j))
+                dist = np.hypot(center_i[0] - center_j[0], center_i[1] - center_j[1])
+
+                if angle_diff < angle_thresh and dist < dist_thresh:
+                    group.append((x1_j, y1_j, x2_j, y2_j))
+                    used[j] = True
+
+            # Fit a line through all points in the group
+            points = []
+            for x1, y1, x2, y2 in group:
+                points.append((x1, y1))
+                points.append((x2, y2))
+            points = np.array(points, dtype=np.int32)
+
+            if len(points) >= 2:
+                [vx, vy, x0, y0] = cv2.fitLine(points, cv2.DIST_L2, 0, 0.01, 0.01)
+                vx, vy = float(vx), float(vy)
+                x0, y0 = float(x0), float(y0)
+
+                # Project line far in both directions using the bounding box of points
+                left = min(points[:, 0])
+                right = max(points[:, 0])
+                top = min(points[:, 1])
+                bottom = max(points[:, 1])
+
+                # Extend line horizontally
+                x1 = int(left)
+                y1 = int(y0 + (x1 - x0) * (vy / vx))
+
+                x2 = int(right)
+                y2 = int(y0 + (x2 - x0) * (vy / vx))
+
+                merged.append((x1, y1, x2, y2))
+
+        return merged
+
+    def draw_lines(self, image, lines):
+        output = image.copy()
+        for x1, y1, x2, y2 in lines:
+            cv2.line(output, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        return output
+
+    def do_lines_intersect(self, p1, p2, q1, q2):
+        def ccw(a, b, c):
+            return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0])
+
+        return ccw(p1, q1, q2) != ccw(p2, q1, q2) and ccw(p1, p2, q1) != ccw(p1, p2, q2)
+
+    def do_line_and_box_intersect(self, line, box):
+        """
+        Check if a line (x1, y1, x2, y2) intersects a box (x1, y1, x2, y2)
+        """
+        lx1, ly1, lx2, ly2 = line
+        bx1, by1, bx2, by2 = box
+
+        # Four edges of the box as line segments
+        box_edges = [
+            (bx1, by1, bx2, by1),  # Top
+            (bx2, by1, bx2, by2),  # Right
+            (bx2, by2, bx1, by2),  # Bottom
+            (bx1, by2, bx1, by1),  # Left
+        ]
+
+        for ex1, ey1, ex2, ey2 in box_edges:
+            if self.do_lines_intersect((lx1, ly1), (lx2, ly2), (ex1, ey1), (ex2, ey2)):
+                return True
+        return False
+
+    def check_connection(self, original_image):
+        original = cv2.imread(original_image)
+        height, width = original.shape[:2]
+        mask = self.extract_blue_lines(self.image_path)
+        raw_lines = self.detect_lines(mask)
+        merged_lines = self.merge_similar_lines(raw_lines)
+        bottom_threshold = int(height * 0.9)  # Only lines with a point below this y-coordinate
+
+        filtered_lines = []
+        for x1, y1, x2, y2 in merged_lines:
+            if y1 >= bottom_threshold or y2 >= bottom_threshold:
+                filtered_lines.append((x1, y1, x2, y2))
+
+        for obj in detected_objects:
+            for line in filtered_lines:
+                if self.do_line_and_box_intersect(line, obj.bounding_box):  # assuming obj.bbox = (x1, y1, x2, y2)
+                    print(f"📍 Line intersects object '{obj.klasse}' at {obj.bounding_box}")
+                    print(obj.klasse)
+                    if obj.klasse == "wall":
+                        return 1
+                    elif obj.klasse.startswith("point"):
+                        return 2
+                    elif obj.klasse == "barrier":
+                        return 3
+                    else:
+                        return 0
+
 
     def _linien_schneiden(self, p1, p2, q1, q2) -> bool:
         def ccw(A, B, C): return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
@@ -184,40 +266,6 @@ class CheckConnection:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def detect_lines(self, image_path: str):
-        # Load the image (in grayscale)
-        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-
-        # Optional: Threshold in case the line is not purely white
-        _, binary = cv2.threshold(img, 50, 255, cv2.THRESH_BINARY)
-
-        # Detect edges (optional if the image is clean binary)
-        edges = cv2.Canny(binary, 50, 150, apertureSize=3)
-
-        # Hough Line Transform
-        lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=100)
-
-        # Convert to color to draw lines
-        output = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
-
-        if lines is not None:
-            for rho, theta in lines[:, 0]:
-                a = np.cos(theta)
-                b = np.sin(theta)
-                x0 = a * rho
-                y0 = b * rho
-                x1 = int(x0 + 1000 * (-b))
-                y1 = int(y0 + 1000 * (a))
-                x2 = int(x0 - 1000 * (-b))
-                y2 = int(y0 - 1000 * (a))
-
-                # Draw the line in green
-                cv2.line(output, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
-        # Show result (or save with cv2.imwrite)
-        cv2.imshow('Detected Lines', output)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     # BITTE PFADE ANPASSEN
@@ -238,9 +286,8 @@ if __name__ == "__main__":
 
     try:
         pruefer = CheckConnection(image_path=edited_path, txt_path=txt_path)
-        pruefer.detect_lines(image_path=img_path)
         print("--- Analyse wird gestartet ---")
-        verbindungs_status = pruefer.check_connection()
+        verbindungs_status = pruefer.check_connection(img_path)
         status_map = {0: "Keine Verbindung", 1: "Verbindung OK", 2: "Wand blockiert", 3: "Barriere als Ziel"}
         print(f"Verbindungsstatus: {verbindungs_status} ({status_map.get(verbindungs_status, 'Unbekannt')})")
 
