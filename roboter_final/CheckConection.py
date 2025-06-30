@@ -141,7 +141,7 @@ class CheckConnection:
     def check_connection(self, original_image):
         original = cv2.imread(original_image)
         height, width = original.shape[:2]
-        mask = self.extract_blue_lines(self.image_path)
+        mask = self.extract_blue_lines(self.image)
         raw_lines = self.detect_lines(mask)
         merged_lines = self.merge_similar_lines(raw_lines)
         bottom_threshold = int(height * 0.9)  # Only lines with a point below this y-coordinate

@@ -82,7 +82,7 @@ def traverse_graph():
     print(graph.nodes[target_node])
 
 
-    current_orientation: float = 90
+    current_orientation: float = -90
     graph.set_current_node(START_NODE)
 
     # communication.wait_for_start()
