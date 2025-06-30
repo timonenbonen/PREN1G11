@@ -80,7 +80,7 @@ def traverse_graph():
 
     graph: Graph = Graph(target_node)
     print(graph.nodes[target_node])
-    graph.mirror_y_axis()
+
 
     current_orientation: float = 90
     graph.set_current_node(START_NODE)
@@ -104,7 +104,7 @@ def traverse_graph():
         print(objects)
 
         check_connection = CheckConnection(processed_image_path, TXT_PATH)
-        line_status = check_connection.check_connection()
+        line_status = check_connection.check_connection(image_path)
 
         print(line_status)
         if line_status == 0:
