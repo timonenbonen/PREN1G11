@@ -55,7 +55,7 @@ class Graph:
     def get_edges(self) -> Dict[str, Box]:
         return self.edges
 
-    def mirror_y_axis(self, coordination_system_size: float) -> None:
+    def mirror_y_axis(self, coordination_system_size: float = canvas_size) -> None:
         for cylinder in self.nodes.values():
             cylinder.mirror_y_axis(coordination_system_size)
 
