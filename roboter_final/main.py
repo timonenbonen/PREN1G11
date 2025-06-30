@@ -77,7 +77,7 @@ def align_with_next_edge(graph:Graph, current_orientation:float):
 
 def traverse_graph():
     target_node = communication.read_position()
-    graph = Graph(target_node)
+    graph: Graph = Graph(target_node)
 
     current_orientation: float = 0
     graph.set_current_node(START_NODE)
@@ -85,7 +85,7 @@ def traverse_graph():
     # communication.wait_for_start()
     print("🚦 Start empfangen – Traversierung beginnt")
 
-    while graph.current_node not in TARGET_NODES:
+    while graph.current_node != graph.target_node:
         print(graph.current_node)
 
         next_node, current_orientation = align_with_next_edge(graph, current_orientation)
@@ -148,7 +148,6 @@ def traverse_graph():
 
     print(f"🎉 Ziel erreicht: {graph.current_node}")
     communication.flash_led(5, 1)
-
 
 def main():
     try:
