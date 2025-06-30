@@ -19,12 +19,12 @@ def capture_picture_from_api(save_path="../pictures/picture.jpg") -> str:
         raise RuntimeError("Kamera konnte kein Bild aufnehmen.")
 
 def capture_picture_from_cv2(save_path="../pictures/picture.jpg") -> str:
-
+    print("start image capture")
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         raise RuntimeError("Kamera konnte nicht geöffnet werden.")
 
-    time.sleep(0.1)  # Give camera a short time to adjust exposure
+    time.sleep(0.5)  # Give camera a short time to adjust exposure
 
     ret, frame = cap.read()
     cap.release()
