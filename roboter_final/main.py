@@ -94,7 +94,7 @@ def traverse_graph():
         print(f"📍 Aktueller Punkt: {graph.current_node}")
 
 
-        image_path = capture_picture_from_cv2(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
+        image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
         print(image_path)
         objects = detect_objects(image_path)
