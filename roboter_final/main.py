@@ -80,7 +80,7 @@ def traverse_graph():
     graph: Graph = Graph(target_node)
     graph.mirror_y_axis()
 
-    current_orientation: float = 0
+    current_orientation: float = -90
     graph.set_current_node(START_NODE)
 
     # communication.wait_for_start()
