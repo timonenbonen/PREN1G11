@@ -112,7 +112,7 @@ def traverse_graph():
         elif line_status == 1:
             print("fahren, keine wall")
             direction = check_connection.get_turn_direction()
-            drive_with_direction(direction)
+            drive_with_direction(direction, False)
             graph.set_current_node(next_node)
 
 
@@ -122,7 +122,7 @@ def traverse_graph():
                 # Nur Kommunikation setzen, kein Hinzufügen
                 print("Fahren mit Wall ist die beste Option")
                 direction = check_connection.get_turn_direction()
-                drive_with_direction(direction,)
+                drive_with_direction(direction, True)
                 graph.set_current_node(next_node)
 
             else:
@@ -139,8 +139,8 @@ def traverse_graph():
         if not next_node:
             print("❌ Kein Pfad gefunden. Abbruch.")
             #break
-
-
+        current_edge:str = f"{graph.current_node.name}_{next_node}"
+        print(f"check if {current_edge} has obstacle {graph.edges[current_edge].has_obstacle}")
 
         #current_node = communication.read_position()
         #print(f"✅ Neue Position: {current_node}")
