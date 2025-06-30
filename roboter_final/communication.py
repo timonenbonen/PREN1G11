@@ -3,6 +3,7 @@ import time
 import serial
 import requests
 from datetime import datetime
+from roboter_final.handle_uart_responses import *
 
 # Setup GPIO only once
 GPIO.setmode(GPIO.BCM)
@@ -10,6 +11,7 @@ GPIO.setup(23, GPIO.OUT)  # LED flash
 GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Start button
 GPIO.setup(25, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Position bit 0
 GPIO.setup(8, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # Position bit 1
+
 
 def calculate_route():
     try:
@@ -95,6 +97,8 @@ def handle_uart_response(response: str):
         print("[MCU] Command completed successfully.")
     elif response == "obstructed;":
         print("[MCU] Unexpected obstacle detected! Handle accordingly.")
+        uart_response_obstructed()
+
 
     else:
         print(f"[MCU] Unhandled response: {response}")
