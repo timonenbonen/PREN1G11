@@ -78,6 +78,7 @@ def align_with_next_edge(graph:Graph, current_orientation:float):
 def traverse_graph():
     target_node = communication.read_position()
     graph: Graph = Graph(target_node)
+    graph.mirror_y_axis()
 
     current_orientation: float = 0
     graph.set_current_node(START_NODE)
