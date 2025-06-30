@@ -31,8 +31,8 @@ def uart_response_obstructed():
         communication.special_command(0, 50, 1)
     elif pruefer == 3:
         print("Hindernis")
-        communication.turn_left(Degree2Milliseconds().drehung_in_ms(180))
+        communication.turn_left(Degree2Milliseconds().turn_degrees_to_ms(180))
         communication.special_command(0, 50, 0)
-        communication.turn_right(Degree2Milliseconds().drehung_in_ms(180))
+        communication.turn_right(Degree2Milliseconds().turn_degrees_to_ms(180))
 
 
