@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 # Stellen Sie sicher, dass der Import-Pfad korrekt ist
 from roboter_final.ErkannteObjekte import Objekt
-from YoloDetector import YoloDetector
+from roboter_final.YoloDetector import YoloDetector
 
 
 class CheckConnection:
