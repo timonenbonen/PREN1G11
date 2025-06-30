@@ -141,17 +141,12 @@ class Graph:
         # If no path is found, return an empty list
         return [], []
 
-    def to_vrml(self) -> list[str]:
-        vrml: list[str] = []
-        for node in self.nodes.values():
-            vrml.append(node.blocked_to_vrml())
-            vrml.append(node.to_vrml())
+    def get_first_edge_in_shortest_path(self) -> str | None:
+        if self.current_node.get_name() == self.target_node.get_name():
+            return None  # Already at target
 
-        for edge in self.edges.values():
-            vrml.append(edge.to_vrml())
-            vrml.append(edge.obstacle_to_vrml())
-
-        return vrml
+        _, path = self.calculate_shortest_path()
+        return path[1] if len(path) >= 2 else None
 
     ##def adjust_graph_with_canvas(self):
 

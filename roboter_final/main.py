@@ -40,21 +40,21 @@ def detect_objects(image_path: str):
 
 
 
-def drive_with_direction(direction):
+def drive_with_direction(direction: str, has_obstacle: bool ):
         if direction == "links":
             communication.turn_left_to_line(0)
-            communication.special_command(0, 50, 0)
 
-        elif direction == "mitte":
-            communication.special_command(0, 50, 0)
         elif direction == "rechts":
             communication.turn_right_to_line(0)
-            communication.special_command(0, 50, 0)
+        elif direction == "mitte":
+            print("no turn")
+        communication.special_command(0, 50, int(has_obstacle))
 
 
 def align_with_next_edge(graph:Graph, current_orientation:float):
-    edge:str = graph.calculate_shortest_path()[1][1]
+    edge:str = graph.get_first_edge_in_shortest_path()
     new_orientation: float = graph.edges[edge].get_length_and_angle()[1]
+
     print(f"current_orientation:{current_orientation}, new_orienation:{new_orientation}")
 
     difference: float = new_orientation - current_orientation
@@ -79,9 +79,7 @@ def traverse_graph():
     target_node = communication.read_position()
     graph = Graph(target_node)
 
-    next_node: str = "F"
     current_orientation: float = 0
-
     graph.set_current_node(START_NODE)
 
     # communication.wait_for_start()
@@ -89,17 +87,15 @@ def traverse_graph():
 
     while graph.current_node not in TARGET_NODES:
         print(graph.current_node)
+
         next_node, current_orientation = align_with_next_edge(graph, current_orientation)
 
         print(f"📍 Aktueller Punkt: {graph.current_node}")
-
-        #drehen zum next node
 
 
         image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
         print(image_path)
-
         objects = detect_objects(image_path)
         processed_image_path: str = lineDetection.process_image(image_path)
         print(objects)
@@ -116,6 +112,7 @@ def traverse_graph():
             print("fahren, keine wall")
             direction = check_connection.get_turn_direction()
             drive_with_direction(direction)
+            graph.set_current_node(next_node)
 
 
         elif line_status == 2:
