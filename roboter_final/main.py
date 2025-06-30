@@ -141,7 +141,7 @@ def traverse_graph():
             print("❌ Kein Pfad gefunden. Abbruch.")
             #break
         current_edge:str = f"{graph.current_node.name}_{next_node}"
-        print(f"check if {current_edge} has obstacle {graph.edges[current_edge].has_obstacle}")
+        print(f"check if {current_edge} has obstacle")
 
         #current_node = communication.read_position()
         #print(f"✅ Neue Position: {current_node}")
