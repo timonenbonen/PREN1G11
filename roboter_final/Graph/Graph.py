@@ -1,4 +1,5 @@
 from typing import Dict
+
 from roboter_final.Graph.Cylinder import Cylinder
 from roboter_final.Graph.Box import Box
 import heapq
@@ -148,12 +149,6 @@ class Graph:
         _, path = self.calculate_shortest_path()
         return path[1] if len(path) >= 2 else None
 
-    ##def adjust_graph_with_canvas(self):
 
-
-
-        ##editor = CanvasInterface(graph=self, canvas_size=canvas_size, possible_target_nodes=self.possible_target_nodes,
-        ##                         canvas_webots_relation=canvas_webots_relation)
-        ##editor.run_loop()
 
 
