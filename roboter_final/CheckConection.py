@@ -184,6 +184,40 @@ class CheckConnection:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+    def detect_lines(self, image_path: str):
+        # Load the image (in grayscale)
+        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+        # Optional: Threshold in case the line is not purely white
+        _, binary = cv2.threshold(img, 50, 255, cv2.THRESH_BINARY)
+
+        # Detect edges (optional if the image is clean binary)
+        edges = cv2.Canny(binary, 50, 150, apertureSize=3)
+
+        # Hough Line Transform
+        lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=100)
+
+        # Convert to color to draw lines
+        output = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
+
+        if lines is not None:
+            for rho, theta in lines[:, 0]:
+                a = np.cos(theta)
+                b = np.sin(theta)
+                x0 = a * rho
+                y0 = b * rho
+                x1 = int(x0 + 1000 * (-b))
+                y1 = int(y0 + 1000 * (a))
+                x2 = int(x0 - 1000 * (-b))
+                y2 = int(y0 - 1000 * (a))
+
+                # Draw the line in green
+                cv2.line(output, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+        # Show result (or save with cv2.imwrite)
+        cv2.imshow('Detected Lines', output)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     # BITTE PFADE ANPASSEN
@@ -202,10 +236,9 @@ if __name__ == "__main__":
     detected_objects = detector.detect(img_path)
     detector.save_to_txt(detected_objects, txt_path)
 
-
     try:
         pruefer = CheckConnection(image_path=edited_path, txt_path=txt_path)
-
+        pruefer.detect_lines(image_path=img_path)
         print("--- Analyse wird gestartet ---")
         verbindungs_status = pruefer.check_connection()
         status_map = {0: "Keine Verbindung", 1: "Verbindung OK", 2: "Wand blockiert", 3: "Barriere als Ziel"}
