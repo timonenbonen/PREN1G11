@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 
 
 from roboter_final import communication
-from roboter_final.get_picture import capture_picture_from_api
+from roboter_final.get_picture import capture_picture_from_api, capture_picture_from_cv2
 from roboter_final.YoloDetector import YoloDetector
 
 from roboter_final import lineDetection
@@ -53,8 +53,8 @@ def drive_with_direction(direction: str, has_obstacle: bool ):
 
 def align_with_next_edge(graph:Graph, current_orientation:float):
     edge:str = graph.get_first_edge_in_shortest_path()
+    print(f"align with edge{edge}")
     new_orientation: float = graph.edges[edge].get_length_and_angle()[1]
-
     print(f"current_orientation:{current_orientation}, new_orienation:{new_orientation}")
 
     difference: float = new_orientation - current_orientation
@@ -93,7 +93,7 @@ def traverse_graph():
         print(f"📍 Aktueller Punkt: {graph.current_node}")
 
 
-        image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
+        image_path = capture_picture_from_cv2(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
         print(image_path)
         objects = detect_objects(image_path)
@@ -121,7 +121,7 @@ def traverse_graph():
                 # Nur Kommunikation setzen, kein Hinzufügen
                 print("Fahren mit Wall ist die beste Option")
                 direction = check_connection.get_turn_direction()
-                drive_with_direction(direction)
+                drive_with_direction(direction,)
                 graph.set_current_node(next_node)
 
             else:
