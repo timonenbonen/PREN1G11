@@ -132,6 +132,7 @@ def traverse_graph():
 
 
         elif line_status == 3:
+            print("Barrier im Weg")
             graph.nodes[next_node].change_is_blocked()
 
 

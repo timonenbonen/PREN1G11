@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 # Stellen Sie sicher, dass der Import-Pfad korrekt ist
 from roboter_final.ErkannteObjekte import Objekt
+from YoloDetector import YoloDetector
 
 
 class CheckConnection:
@@ -187,11 +188,23 @@ class CheckConnection:
 if __name__ == "__main__":
     # BITTE PFADE ANPASSEN
     base_path = "C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/dummy_data"
+    model_path = "C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/my_model.pt" # Modellpfad hier definieren
+
     txt_path = os.path.join(base_path, "detected_objects.txt")
-    img_path = os.path.join(base_path, "7c3e6b69-e497-4c14-8aec-c03ac61e485f.jpg")
+    img_path = os.path.join(base_path, "1a0c5f09-25ad-40fb-9b1a-a5d92b5bbb16.jpg")
+    edited_path = os.path.join(base_path, "bearbeitet_1a0c5f09-25ad-40fb-9b1a-a5d92b5bbb16.png")
+
+    # 1. BESSERER VARIABLENNAME: Nenne die Instanz z.B. "detector" statt "YoloDetector"
+    detector = YoloDetector(model_path=model_path)
+
+    # 2. KORRIGIERTER AUFRUF: Übergib nur die notwendigen Argumente.
+    #    Hinweis: "object" ist ein eingebauter Name in Python, besser "detected_objects" verwenden.
+    detected_objects = detector.detect(img_path)
+    detector.save_to_txt(detected_objects, txt_path)
+
 
     try:
-        pruefer = CheckConnection(image_path=img_path, txt_path=txt_path)
+        pruefer = CheckConnection(image_path=edited_path, txt_path=txt_path)
 
         print("--- Analyse wird gestartet ---")
         verbindungs_status = pruefer.check_connection()
