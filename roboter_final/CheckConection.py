@@ -151,7 +151,7 @@ class CheckConnection:
             if y1 >= bottom_threshold or y2 >= bottom_threshold:
                 filtered_lines.append((x1, y1, x2, y2))
 
-        for obj in detected_objects:
+        for obj in self.object_list:
             for line in filtered_lines:
                 if self.do_line_and_box_intersect(line, obj.bounding_box):  # assuming obj.bbox = (x1, y1, x2, y2)
                     print(f"📍 Line intersects object '{obj.klasse}' at {obj.bounding_box}")
