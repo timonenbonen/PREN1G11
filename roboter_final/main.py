@@ -92,6 +92,8 @@ def traverse_graph():
     while graph.current_node != graph.target_node:
         print(graph.current_node)
 
+
+
         next_node, current_orientation = align_with_next_edge(graph, current_orientation)
 
         print(f"📍 Aktueller Punkt: {graph.current_node}")
@@ -121,16 +123,9 @@ def traverse_graph():
 
         elif line_status == 2:
 
-            if next_node in FLAGS:
-                # Nur Kommunikation setzen, kein Hinzufügen
-                print("Fahren mit Wall ist die beste Option")
-                drive_with_direction(direction, True)
-                graph.set_current_node(next_node)
-
-            else:
-                # Wenn der Node nicht drin ist, hinzufügen
-                FLAGS.append(next_node)
-                graph.block_edge(f"{graph.current_node.name}_{next_node}")
+            print("Fahren mit Wall ist die beste Option")
+            drive_with_direction(direction, True)
+            graph.set_current_node(next_node)
 
 
         elif line_status == 3:
