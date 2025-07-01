@@ -20,6 +20,3 @@ def uart_response_obstructed():
     communication.turn_left(Degree2Milliseconds().turn_degrees_to_ms(180))
     communication.special_command(0,50,0)
     communication.turn_left(Degree2Milliseconds().turn_degrees_to_ms(180))
-
-
-

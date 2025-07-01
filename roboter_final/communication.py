@@ -27,7 +27,9 @@ def calculate_route():
 
 
 def special_command(code: int, action: int, value: int):
-    send_uart_command(f"{code},{action},{value};")
+
+    return send_uart_command(f"{code},{action},{value};")
+
 
 def turn_left(duration_ms: int):
     send_uart_command(f"0,10,{duration_ms};")
@@ -76,9 +78,11 @@ def send_uart_command(command: str):
                             waiting_for_final_response = True  # Wait for "end;" or "obstructed;"
                             continue
 
-                        handle_uart_response(response)
+                        message = handle_uart_response(response)
                         print("uart", "info", "Received UART response", {"response": response})
-                        break
+                        time.sleep(0.1)
+                        return message
+
 
                 if time.time() - start_time > timeout_seconds:
                     print("[UART] Timeout waiting for response from MCU.")
@@ -87,10 +91,11 @@ def send_uart_command(command: str):
 
                 time.sleep(0.1)
 
+
     except serial.SerialException as e:
         print(f"[Communication] UART error: {e}")
         print("uart", "error", "UART communication failed", {"exception": str(e)})
-
+    return 1
 
 def handle_uart_response(response: str):
     if response == "end;":
@@ -98,10 +103,13 @@ def handle_uart_response(response: str):
     elif response == "obstructed;":
         print("[MCU] Unexpected obstacle detected! Handle accordingly.")
         uart_response_obstructed()
+    elif response == "no line;":
+        return 0
 
 
     else:
         print(f"[MCU] Unhandled response: {response}")
+    return 1
 
 def log_event(source, level, message, payload=None):
     try:

@@ -41,10 +41,16 @@ def detect_objects(image_path: str):
 
 
 def drive_with_direction(direction: str, has_obstacle: bool ):
-    communication.special_command(0,69,0)
+    return_message =communication.special_command(0,69,0)
+    if return_message == 1:
 
-    communication.special_command(0, 50, int(has_obstacle)) #communication.special_command(0, 50, int(has_obstacle))
-
+        communication.special_command(0, 50, int(has_obstacle))
+    else:
+        if direction == "links":
+            communication.special_command(0, 20, 0)
+        elif direction == "rechts":
+            communication.special_command(0, 21, 0)
+        communication.special_command(0, 50, int(has_obstacle))
 
 def align_with_next_edge(graph:Graph, current_orientation:float):
     edge:str = graph.get_first_edge_in_shortest_path()
