@@ -105,6 +105,7 @@ def traverse_graph():
 
         check_connection = CheckConnection(processed_image_path,objects)
         line_status = check_connection.check_connection()
+        direction = check_connection.get_turn_direction()
 
         print(line_status)
         if line_status == 0:
@@ -113,7 +114,6 @@ def traverse_graph():
 
         elif line_status == 1:
             print("fahren, keine wall")
-            direction = check_connection.get_turn_direction()
             drive_with_direction(direction, False)
             graph.set_current_node(next_node)
 
@@ -123,7 +123,6 @@ def traverse_graph():
             if next_node in FLAGS:
                 # Nur Kommunikation setzen, kein Hinzufügen
                 print("Fahren mit Wall ist die beste Option")
-                direction = check_connection.get_turn_direction()
                 drive_with_direction(direction, True)
                 graph.set_current_node(next_node)
 
