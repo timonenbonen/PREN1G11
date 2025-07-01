@@ -159,9 +159,13 @@ class CheckConnection:
             # Barrier on a point (check for complete overlap)
             if obj_type == "barrier":
                 for point_obj in self.object_list:
+                    print(f"point{point_obj}")
                     if point_obj.klasse.startswith("point"):
                         px1, py1, px2, py2 = point_obj.bounding_box
+                        print(f"point coordinates{px1, py1, px2, py2}")
                         bx1, by1, bx2, by2 = box
+                        print(f"point coordinates{bx1, by1, bx2, by2}")
+
 
                         if (
                                 bx1 <= px1 <= bx2 and bx1 <= px2 <= bx2 and
