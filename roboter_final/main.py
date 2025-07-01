@@ -103,7 +103,7 @@ def traverse_graph():
         processed_image_path: str = lineDetection.process_image(image_path)
         print(objects)
 
-        check_connection = CheckConnection(processed_image_path,processed_image_path, objects)
+        check_connection = CheckConnection(processed_image_path,objects)
         line_status = check_connection.check_connection()
 
         print(line_status)
