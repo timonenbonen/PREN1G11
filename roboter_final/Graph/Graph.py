@@ -159,6 +159,9 @@ class Graph:
         reverse_name = f"{node1}_{node2}"
         if edge_name in self.edges:
             self.edges[edge_name].set_is_removed(True)
+        else:
+            print("removing edge error")
         if reverse_name in self.edges:
             self.edges[reverse_name].set_is_removed(True)
-
+        else:
+            print("removing edge error")

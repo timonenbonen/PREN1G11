@@ -62,7 +62,7 @@ def align_with_next_edge(graph:Graph, current_orientation:float):
     difference = (difference + 180) % 360 - 180
 
     difference_in_ms: int = Degree2Milliseconds.turn_degrees_to_ms(difference)
-    if abs(difference) < 15:
+    if abs(difference) < 5:
         print(f"✅ Already aligned {difference} degrees difference – no turn needed")
     elif difference < 0:
         print(f"To much right, turning {-difference} degrees left")
