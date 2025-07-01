@@ -41,13 +41,7 @@ def detect_objects(image_path: str):
 
 
 def drive_with_direction(direction: str, has_obstacle: bool ):
-        if direction == "links":
-            communication.turn_left_to_line(0)
 
-        elif direction == "rechts":
-            communication.turn_right_to_line(0)
-        elif direction == "mitte":
-            print("no turn")
         communication.special_command(0, 50, int(has_obstacle))
 
 
