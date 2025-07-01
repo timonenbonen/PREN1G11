@@ -45,9 +45,7 @@ class Graph:
         self.possible_target_nodes: list[Cylinder] = [nodes['F'], nodes['G'], nodes['H']]
 
     def change_target(self, new_target_node) -> None:
-        self.target_node.set_base_color((1, 1, 1))
         self.target_node = new_target_node
-        self.target_node.set_base_color((0, 0, 1))
 
     def set_current_node(self, new_node:str) -> None:
         self.current_node = self.nodes[new_node]
@@ -143,7 +141,7 @@ class Graph:
 
     def get_first_edge_in_shortest_path(self) -> str | None:
         if self.current_node.get_name() == self.target_node.get_name():
-            return None  # Already at target
+            return None
 
         _, path = self.calculate_shortest_path()
         return path[1] if len(path) >= 2 else None
