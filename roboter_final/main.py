@@ -107,24 +107,24 @@ def traverse_graph():
 
         print(line_status)
         if line_status == 0:
-            print("neues Tages")
+            print("neues Targets📍📍📍")
             graph.remove_edge(f"{graph.current_node.name}_{next_node}")
 
         elif line_status == 1:
-            print("fahren, keine wall")
+            print("fahren, keine wall📍📍📍📍")
             drive_with_direction(direction, False)
             graph.set_current_node(next_node)
 
 
         elif line_status == 2:
 
-            print("Fahren mit Wall ist die beste Option")
+            print("Fahren mit Wall ist die beste Option📍📍📍📍")
             drive_with_direction(direction, True)
             graph.set_current_node(next_node)
 
 
         elif line_status == 3:
-            print("Barrier im Weg")
+            print("Barrier im Weg📍📍📍📍")
             graph.nodes[next_node].set_is_blocked(True)
 
 
