@@ -147,6 +147,10 @@ class CheckConnection:
         bottom_threshold = int(height * 0.9)  # Only lines with a point below this y-coordinate
 
         filtered_lines = []
+
+        for x1, y1, x2, y2 in merged_lines:
+            if y1 >= bottom_threshold or y2 >= bottom_threshold:
+                filtered_lines.append((x1, y1, x2, y2))
         # Step 3: Scan intersections
         point_hit = False
         wall_hit = False
