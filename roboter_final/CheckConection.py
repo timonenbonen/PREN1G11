@@ -267,7 +267,7 @@ class CheckConnection:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def get_turn_direction(self, center_zone_width_pixels=50):
+    def get_turn_direction(self, center_zone_width_pixels=200):
         if self.winning_object is None:
             return "keine Richtung"
 
@@ -290,7 +290,7 @@ class CheckConnection:
 
 
 if __name__ == "__main__":
-    processed_image_path = r"C:\Users\marin\PycharmProjects\PREN1G11\roboter_final\dummy_data\bearbeitet_Test2_C.jpg"
+    processed_image_path = r"C:\Users\marin\PycharmProjects\PREN1G11\roboter_final\dummy_data\edited_F.jpg"
     objects_txt_path = r"C:\Users\marin\PycharmProjects\PREN1G11\roboter_final\dummy_data\F.txt"
 
     try:
