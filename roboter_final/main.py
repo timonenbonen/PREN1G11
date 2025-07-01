@@ -86,6 +86,7 @@ def traverse_graph():
     graph.set_current_node(START_NODE)
 
     communication.wait_for_start()
+    time.sleep(1)
     print("🚦 Start empfangen – Traversierung beginnt")
     communication.special_command(0,50,0)
     while graph.current_node != graph.target_node:
