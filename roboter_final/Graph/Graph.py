@@ -41,7 +41,6 @@ class Graph:
         self.nodes: Dict[str, Cylinder] = nodes  # {node_id: (x, y)}
         self.edges: Dict[str, Box] = edges
         self.target_node: Cylinder = nodes[target_node]  # Target node IDs
-        self.target_node.set_base_color((0, 0, 1))
         self.current_node: Cylinder = current_node
         self.possible_target_nodes: list[Cylinder] = [nodes['F'], nodes['G'], nodes['H']]
 
