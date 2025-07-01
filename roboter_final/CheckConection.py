@@ -34,9 +34,20 @@ class CheckConnection:
 
     def extract_blue_lines(self, image_bgr):
         hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
-        lower_blue = np.array([55, 20, 150])
-        upper_blue = np.array([70, 60, 255])
-        return cv2.inRange(hsv, lower_blue, upper_blue)
+        # Pale greenish/cyan lines (first color)
+        lower1 = np.array([65, 20, 200])
+        upper1 = np.array([95, 60, 255])
+
+        # Pale turquoise/gray-green lines (second color)
+        lower2 = np.array([25, 20, 190])
+        upper2 = np.array([40, 70, 235])
+
+        mask1 = cv2.inRange(hsv, lower1, upper1)
+        mask2 = cv2.inRange(hsv, lower2, upper2)
+
+        # Combine both
+        combined_mask = cv2.bitwise_or(mask1, mask2)
+        return cv2.inRange(hsv, lower1, upper1)
 
     def detect_lines(self, mask):
         edges = cv2.Canny(mask, 50, 150)
