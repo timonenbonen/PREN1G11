@@ -147,23 +147,44 @@ class CheckConnection:
         bottom_threshold = int(height * 0.9)  # Only lines with a point below this y-coordinate
 
         filtered_lines = []
-        for x1, y1, x2, y2 in merged_lines:
-            if y1 >= bottom_threshold or y2 >= bottom_threshold:
-                filtered_lines.append((x1, y1, x2, y2))
+        # Step 3: Scan intersections
+        point_hit = False
+        wall_hit = False
 
         for obj in self.object_list:
-            for line in filtered_lines:
-                if self.do_line_and_box_intersect(line, obj.bounding_box):  # assuming obj.bbox = (x1, y1, x2, y2)
-                    print(f"📍 Line intersects object '{obj.klasse}' at {obj.bounding_box}")
-                    print(obj.klasse)
-                    if obj.klasse == "wall":
-                        return 1
-                    elif obj.klasse.startswith("point"):
-                        return 2
-                    elif obj.klasse == "barrier":
-                        return 3
-                    else:
-                        return 0
+            obj_type = obj.klasse
+
+            box = obj.bounding_box
+            print(f"object_type: {obj_type} bounding_box: {box}")
+            # Barrier on a point (check for complete overlap)
+            if obj_type == "barrier":
+                for point_obj in self.object_list:
+                    if point_obj.klasse.startswith("point"):
+                        px1, py1, px2, py2 = point_obj.bounding_box
+                        bx1, by1, bx2, by2 = box
+
+                        if (
+                                bx1 <= px1 <= bx2 and bx1 <= px2 <= bx2 and
+                                by1 <= py1 <= by2 and by1 <= py2 <= by2
+                        ):
+                            return 3  # Barrier overlaps a point
+
+            # Check line intersections
+            if obj_type.startswith("point") or obj_type == "wall":
+                for line in filtered_lines:
+                    if self.do_line_and_box_intersect(line, box):
+                        if obj_type.startswith("point"):
+                            point_hit = True
+                        elif obj_type == "wall":
+                            wall_hit = True
+
+        # Final logic based on flags
+        if point_hit and wall_hit:
+            return 2  # Point + Wall intersect with line
+        elif point_hit:
+            return 1  # Only point intersects with line
+        else:
+            return 0  # Nothing intersects
 
 
     def _linien_schneiden(self, p1, p2, q1, q2) -> bool:
