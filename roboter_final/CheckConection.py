@@ -267,7 +267,7 @@ class CheckConnection:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def get_turn_direction(self, center_zone_width_pixels=200):
+    def get_turn_direction(self, center_zone_width_pixels=400):
         if self.winning_object is None:
             return "keine Richtung"
 
