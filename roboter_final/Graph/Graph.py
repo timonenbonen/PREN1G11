@@ -129,6 +129,7 @@ class Graph:
 
             # If target node is reached, return the path with edges
             if current_node == self.target_node.get_name():
+                print(algorithm_sequence,path)
                 return algorithm_sequence, path
 
             # Explore neighbors
