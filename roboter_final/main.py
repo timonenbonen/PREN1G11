@@ -110,7 +110,7 @@ def traverse_graph():
         print(line_status)
         if line_status == 0:
             print("neues Tages")
-            graph.edges[f"{graph.current_node.name}_{next_node}"].set_is_removed(True)
+            graph.remove_edge(f"{graph.current_node.name}_{next_node}")
 
         elif line_status == 1:
             print("fahren, keine wall")
@@ -129,7 +129,7 @@ def traverse_graph():
             else:
                 # Wenn der Node nicht drin ist, hinzufügen
                 FLAGS.append(next_node)
-                graph.edges[f"{graph.current_node.name}_{next_node}"].set_has_obstacle(True)
+                graph.block_edge(f"{graph.current_node.name}_{next_node}")
 
 
         elif line_status == 3:

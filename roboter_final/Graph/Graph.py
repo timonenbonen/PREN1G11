@@ -146,6 +146,19 @@ class Graph:
         _, path = self.calculate_shortest_path()
         return path[1] if len(path) >= 2 else None
 
+    def block_edge(self, edge_name: str) -> None:
+        node1, node2 = edge_name.split("_")
+        reverse_name = f"{node2}_{node1}"
+        if edge_name in self.edges:
+            self.edges[edge_name].set_has_obstacle(True)
+        if reverse_name in self.edges:
+            self.edges[reverse_name].set_has_obstacle(True)
 
-
+    def remove_edge(self, edge_name: str) -> None:
+        node1, node2 = edge_name.split("_")
+        reverse_name = f"{node1}_{node2}"
+        if edge_name in self.edges:
+            self.edges[edge_name].set_is_removed(True)
+        if reverse_name in self.edges:
+            self.edges[reverse_name].set_is_removed(True)
 
