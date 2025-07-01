@@ -161,10 +161,12 @@ class Graph:
         if edge_name in self.edges:
             self.edges[edge_name].set_is_removed(True)
             print("removing edge worked")
+            print(self.edges[edge_name].is_removed)
         else:
             print("removing edge error")
         if reverse_name in self.edges:
             self.edges[reverse_name].set_is_removed(True)
+            print(self.edges[reverse_name].is_removed)
             print("removing edge worked")
         else:
             print("removing edge error")
