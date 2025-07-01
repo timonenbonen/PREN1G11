@@ -157,7 +157,7 @@ class Graph:
 
     def remove_edge(self, edge_name: str) -> None:
         node1, node2 = edge_name.split("_")
-        reverse_name = f"{node1}_{node2}"
+        reverse_name = f"{node2}_{node1}"
         if edge_name in self.edges:
             self.edges[edge_name].set_is_removed(True)
             print("removing edge worked")
