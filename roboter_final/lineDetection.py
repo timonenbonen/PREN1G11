@@ -3,46 +3,44 @@ import numpy as np
 import os
 
 
-def replace_color_with_white(img, bgr_color, tol):
+def replace_colors_with_white(img, bgr_colors, tol):
     """
-    Findet eine bestimmte Farbe in einem Bild und ersetzt sie durch Weiß.
+    Findet eine Liste von Farben in einem Bild und ersetzt sie durch Weiß.
 
     Args:
         img: Das Eingabebild (BGR-Format von OpenCV).
-        bgr_color: Die zu entfernende Farbe als BGR-Tupel (Blau, Grün, Rot).
+        bgr_colors: Eine LISTE von zu entfernenden Farben,
+                    jedes als BGR-Tupel (Blau, Grün, Rot).
         tol: Die Toleranz, wie stark andere Farben abweichen dürfen.
 
     Returns:
-        Ein neues Bild im BGR-Format, bei dem die Farbe durch Weiß ersetzt wurde.
+        Ein neues Bild im BGR-Format, bei dem die Farben durch Weiß ersetzt wurden.
     """
-    # Berechne die untere und obere Farbgrenze für die Maske
-    # np.clip stellt sicher, dass die Werte im gültigen Bereich [0, 255] bleiben
-    untere_grenze = np.clip(np.array(bgr_color) - tol, 0, 255)
-    obere_grenze = np.clip(np.array(bgr_color) + tol, 0, 255)
+    master_mask = np.zeros(img.shape[:2], dtype=np.uint8)
 
-    # Erstelle eine Maske: Pixel im Farbbereich werden weiß (255), der Rest schwarz (0)
-    maske = cv2.inRange(img, untere_grenze, obere_grenze)
+    for bgr_color in bgr_colors:
+        untere_grenze = np.clip(np.array(bgr_color, dtype=np.int32) - tol, 0, 255).astype(np.uint8)
+        obere_grenze = np.clip(np.array(bgr_color, dtype=np.int32) + tol, 0, 255).astype(np.uint8)
 
-    # Erstelle eine Kopie, um das Originalbild nicht zu verändern
+        temp_mask = cv2.inRange(img, untere_grenze, obere_grenze)
+        master_mask = cv2.bitwise_or(master_mask, temp_mask)
+
     result_img = img.copy()
-
-    # NEU: Überall, wo die Maske nicht-null ist (d.h. die Farbe gefunden wurde),
-    # werden die Pixel im Ergebnisbild auf Weiß gesetzt.
-    # Weiß in BGR ist (255, 255, 255)
-    result_img[maske > 0] = [255, 255, 255]
+    result_img[master_mask > 0] = [255, 255, 255]
 
     return result_img
 
 
 def process_image(input_path: str,
-                  # Dein BGR-Wert für RGB(128, 64, 0)
-                  # OpenCV verwendet BGR, also ist RGB(128, 64, 0) -> BGR(0, 64, 128)
-                  # Ich lasse deinen Wert (128, 64, 0) drin, falls das gewollt ist.
-                  bgr_color=(0, 64, 128),
-                  # Toleranz wie gewünscht
-                  tol=150):
+                  # NEU: Liste mit deinen zwei spezifischen Farben
+                  bgr_colors=[
+                      (148, 125, 109),    # BGR für RGB(109, 125, 148)
+                      (51, 59, 76)         # BGR für RGB(76, 59, 51)
+                  ],
+                  # NEU: Viel kleinere, sinnvollere Standard-Toleranz
+                  tol=100):
     """
-    Liest ein Bild, ruft die Funktion zum Ersetzen der Farbe auf und speichert das Ergebnis.
+    Liest ein Bild, ruft die Funktion zum Ersetzen der Farben auf und speichert das Ergebnis.
     """
     if not os.path.isfile(input_path):
         print(f"❌ Datei nicht gefunden: {input_path}")
@@ -53,18 +51,15 @@ def process_image(input_path: str,
         print("❌ Fehler beim Einlesen des Bildes!")
         return
 
-    # Rufe die Funktion auf, um die Farbe durch Weiß zu ersetzen
-    resultat = replace_color_with_white(img, bgr_color, tol)
+    resultat = replace_colors_with_white(img, bgr_colors, tol)
 
     input_dir, input_file = os.path.split(input_path)
     name, ext = os.path.splitext(input_file)
 
-    # Du kannst jetzt auch als .jpg speichern, da keine Transparenz mehr nötig ist.
-    # PNG funktioniert aber weiterhin problemlos.
     output_path = os.path.join(input_dir, f"bearbeitet_{name}.png")
 
     if cv2.imwrite(output_path, resultat):
-        print(f"✔ Ergebnis mit weiß ersetzter Farbe gespeichert unter: {output_path}")
+        print(f"✔ Ergebnis mit weiß ersetzten Farben gespeichert unter: {output_path}")
     else:
         print("❌ Fehler beim Speichern!")
 
@@ -73,14 +68,12 @@ def process_image(input_path: str,
 
 # Beispiel für die Verwendung
 if __name__ == '__main__':
-    image_to_process = 'C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/dummy_data/1a0c5f09-25ad-40fb-9b1a-a5d92b5bbb16.jpg'
+    image_to_process = 'C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/dummy_data/cf68ede5-0980-411a-bca6-8ec358e0a8e5.jpg'
     if os.path.exists(image_to_process):
-        # Wichtiger Hinweis zur Farbe:
-        # Dein Kommentar sagte RGB(128, 64, 0).
-        # OpenCV liest Bilder im BGR-Format.
-        # RGB(128, 64, 0) ist also BGR(0, 64, 128).
-        # Ich habe das im Funktionsaufruf unten korrigiert.
-        process_image(image_to_process, bgr_color=(0, 64, 128), tol=150)
+        # Der Aufruf verwendet jetzt die neuen Standardeinstellungen (deine Farben, kleine Toleranz).
+        # Du kannst die Toleranz hier immer noch überschreiben, falls nötig.
+        # z.B. process_image(image_to_process, tol=15)
+        process_image(image_to_process)
     else:
-        print(f"Bitte erstelle eine Datei namens '{image_to_process}' im selben Ordner"
+        print(f"Bitte erstelle eine Datei namens '{os.path.basename(image_to_process)}'"
               " oder ändere den Pfad im Code.")
