@@ -1,323 +1,269 @@
-# CheckConnection.py
-import os
 import cv2
 import numpy as np
-# Stellen Sie sicher, dass der Import-Pfad korrekt ist
-from roboter_final.ErkannteObjekte import Objekt
-from roboter_final.YoloDetector import YoloDetector
+import os
+from shapely.geometry import LineString, box
+
+
+# Eine Dummy-Klasse, um Ihre 'Objekt'-Klasse für das Beispiel zu simulieren
+# In Ihrem Projekt würden Sie 'from roboter_final.ErkannteObjekte import Objekt' verwenden
+class DummyObjekt:
+    def __init__(self, typ, bbox, center):
+        self.typ = typ
+        self.bbox = bbox
+        self.center = center
+
+    def __repr__(self):
+        return f"Objekt(typ='{self.typ}', center={self.center})"
+
+
+# HILFSFUNKTION: Parst die Objektdaten aus einem String (simuliert das Lesen aus einer .txt-Datei)
+def parse_objects_from_string(data_string):
+    """
+    Parst einen mehrzeiligen String im Format 'typ;%;bbox;area;center;'
+    und gibt eine Liste von DummyObjekt-Instanzen zurück.
+    """
+    parsed_objects = []
+    for line in data_string.strip().split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+
+        try:
+            parts = line.strip(';').split(';')
+            if len(parts) < 5:
+                continue
+
+            typ = parts[0]
+
+            # Bounding Box: (x1, y1, x2, y2)
+            bbox_str = parts[2].strip('()')
+            bbox = tuple(map(int, bbox_str.split(',')))
+
+            # Zentrum: (cx, cy) - Konvertiert von Float zu Integer für cv2-Funktionen
+            center_str = parts[4].strip('()')
+            center = tuple(int(float(c)) for c in center_str.split(','))
+
+            parsed_objects.append(DummyObjekt(typ=typ, bbox=bbox, center=center))
+        except (ValueError, IndexError) as e:
+            print(f"Warnung: Konnte Zeile nicht parsen: '{line}' - Fehler: {e}")
+
+    return parsed_objects
 
 
 class CheckConnection:
-    def __init__(self, image_path: str, txt_path: str):
-        self.image_path = image_path
-        self.txt_path = txt_path
-        self.image = cv2.imread(self.image_path)
-        if self.image is None:
-            raise FileNotFoundError(f"Bild konnte nicht unter '{self.image_path}' geladen werden.")
-        self.height, self.width, _ = self.image.shape
-        self.gray_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
-        self.object_list = self._lade_objekte_aus_datei()
-        if not self.object_list:
-            print(f"WARNUNG: Keine Objekte aus '{self.txt_path}' geladen.")
+    """
+    Diese Klasse analysiert ein Bild auf eine Verbindung zwischen einem Startpunkt
+    am Boden und einem der erkannten Objekte. Sie kann das Ergebnis auch visualisieren.
+    """
 
-        self.last_punkt1 = None
-        self.last_punkt2 = None
+    def __init__(self, image_with_lines_path, original_image_path, object_list):
+        self.image_with_lines_path = image_with_lines_path
+        self.original_image_path = original_image_path
+        self.image_for_analysis = cv2.imread(self.image_with_lines_path, cv2.IMREAD_GRAYSCALE)
+        if self.image_for_analysis is None:
+            raise FileNotFoundError(f"Analyse-Bild konnte nicht geladen werden: {self.image_with_lines_path}")
+        self.image_for_visualization = cv2.imread(self.original_image_path)
+        if self.image_for_visualization is None:
+            raise FileNotFoundError(f"Visualisierungs-Bild konnte nicht geladen werden: {self.original_image_path}")
+        self.height, self.width = self.image_for_analysis.shape
+        self.all_objects = self._parse_objects(object_list)
+        self._reset_analysis_state()
 
-    def _lade_objekte_aus_datei(self) -> list:
-        try:
-            with open(self.txt_path, 'r') as file:
-                content = file.read()
-            return Objekt.parse_text_to_objects(content)
-        except Exception as e:
-            print(f"FEHLER beim Laden der Objekte: {e}")
-            return []
+    def _reset_analysis_state(self):
+        self.start_point = None
+        self.candidate_objects = []
+        self.winning_object = None
+        self.is_wall_collision = False
+        self.bottom_grid_squares = []
 
-    def extract_blue_lines(self, image_bgr):
-        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
-        lower_blue = np.array([88, 20, 230])
-        upper_blue = np.array([92, 40, 255])
-        return cv2.inRange(hsv, lower_blue, upper_blue)
+    def _parse_objects(self, object_list):
+        parsed = []
+        for obj in object_list:
+            if isinstance(obj, dict):
+                parsed.append(obj)
+            else:
+                parsed.append({
+                    'type': obj.typ if hasattr(obj, 'typ') else obj.type,
+                    'bbox': obj.bbox,
+                    'center': obj.center
+                })
+        return parsed
 
-    def detect_lines(self, mask):
-        edges = cv2.Canny(mask, 50, 150)
-        return cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=30, maxLineGap=10)
+    def _find_bottom_target_point(self, weiss_schwelle):
+        self.bottom_grid_squares = []
+        bottom_search_area_height = 50
+        search_y_start = self.height - bottom_search_area_height
+        square_size = bottom_search_area_height
+        non_white_mask = self.image_for_analysis < weiss_schwelle
+        candidate_squares = []
+        for x in range(0, self.width, square_size):
+            x_start, x_end = x, min(x + square_size, self.width)
+            y_start, y_end = search_y_start, self.height
+            square_roi = non_white_mask[y_start:y_end, x_start:x_end]
+            non_white_pixel_count = np.count_nonzero(square_roi)
+            center_point = (x_start + (x_end - x_start) // 2, y_start + (y_end - y_start) // 2)
+            grid_square_info = {'rect': (x_start, y_start, x_end, y_end), 'is_candidate': non_white_pixel_count > 50}
+            self.bottom_grid_squares.append(grid_square_info)
+            if grid_square_info['is_candidate']:
+                candidate_squares.append({'center': center_point, 'pos_x': center_point[0]})
+        if not candidate_squares: return None
+        image_center_x = self.width / 2
+        candidate_squares.sort(key=lambda sq: abs(sq['pos_x'] - image_center_x))
+        winner_center_x = candidate_squares[0]['pos_x']
+        for sq in self.bottom_grid_squares:
+            sq_center_x = sq['rect'][0] + (sq['rect'][2] - sq['rect'][0]) // 2
+            if sq_center_x == winner_center_x: sq['is_winner'] = True
+        return candidate_squares[0]['center']
 
-    def line_to_angle_and_center(self, x1, y1, x2, y2):
-        angle = np.degrees(np.arctan2(y2 - y1, x2 - x1)) % 180
-        center = ((x1 + x2) / 2, (y1 + y2) / 2)
-        return angle, center
+    def _find_candidate_objects(self):
+        candidate_types = ['point', 'pointa', 'pointb', 'pointc', 'barrier']
+        candidates = [obj for obj in self.all_objects if obj['type'] in candidate_types]
+        if not candidates: return []
+        image_center_x = self.width / 2
+        candidates.sort(key=lambda obj: abs(obj['center'][0] - image_center_x))
+        return candidates[:2]
 
-    def merge_similar_lines(self, lines, angle_thresh=5.0, dist_thresh=1000.0):
-        if lines is None:
-            return []
+    def _is_line_present(self, point1, point2, weiss_schwelle, linien_schwelle, balken_breite):
+        mask = np.zeros_like(self.image_for_analysis)
+        cv2.line(mask, point1, point2, 255, thickness=balken_breite)
+        total_pixels_in_line = np.count_nonzero(mask)
+        if total_pixels_in_line == 0: return False
+        non_white_mask = (self.image_for_analysis < weiss_schwelle).astype(np.uint8) * 255
+        intersection = cv2.bitwise_and(non_white_mask, mask)
+        non_white_pixels_on_line = np.count_nonzero(intersection)
+        return (non_white_pixels_on_line / total_pixels_in_line) > linien_schwelle
 
-        merged = []
-        used = [False] * len(lines)
+    def _check_wall_collision(self, point1, point2):
+        connection_line = LineString([point1, point2])
+        wall_objects = [obj for obj in self.all_objects if obj['type'] == 'wall']
+        for wall in wall_objects:
+            wall_bbox = wall['bbox']
+            wall_polygon = box(wall_bbox[0], wall_bbox[1], wall_bbox[2], wall_bbox[3])
+            if connection_line.intersects(wall_polygon): return True
+        return False
 
-        for i in range(len(lines)):
-            if used[i]:
-                continue
+    def check_connection(self, linien_schwelle=0.05, weiss_schwelle=240, balken_breite=15):
+        self._reset_analysis_state()
+        self.start_point = self._find_bottom_target_point(weiss_schwelle)
+        if self.start_point is None: return 0
+        self.candidate_objects = self._find_candidate_objects()
+        if not self.candidate_objects: return 0
+        for candidate in self.candidate_objects:
+            if self._is_line_present(self.start_point, candidate['center'], weiss_schwelle, linien_schwelle,
+                                     balken_breite):
+                self.winning_object = candidate
+                break
+        if self.winning_object is None: return 0
+        if self.winning_object['type'] == 'barrier': return 3
+        self.is_wall_collision = self._check_wall_collision(self.start_point, self.winning_object['center'])
+        if self.is_wall_collision:
+            return 2
+        else:
+            return 1
 
-            x1_i, y1_i, x2_i, y2_i = lines[i][0]
-            angle_i, center_i = self.line_to_angle_and_center(x1_i, y1_i, x2_i, y2_i)
-            group = [(x1_i, y1_i, x2_i, y2_i)]
-            used[i] = True
-
-            for j in range(i + 1, len(lines)):
-                if used[j]:
+    def visualize_connection_analysis(self, final_status, show_grid=True):
+        vis_img = cv2.imread(self.image_with_lines_path)
+        colors = {'wall': (0, 0, 255), 'barrier': (0, 165, 255), 'point': (255, 0, 0), 'grid_candidate': (0, 255, 0),
+                  'grid_winner': (0, 0, 255), 'line_success': (0, 255, 0), 'line_blocked': (0, 0, 255),
+                  'line_barrier': (0, 165, 255), 'text': (255, 255, 255)}
+        if show_grid and self.bottom_grid_squares:
+            for sq in self.bottom_grid_squares:
+                if sq.get('is_winner', False):
+                    color, thickness = colors['grid_winner'], 2
+                elif sq['is_candidate']:
+                    color, thickness = colors['grid_candidate'], 1
+                else:
                     continue
-
-                x1_j, y1_j, x2_j, y2_j = lines[j][0]
-                angle_j, center_j = self.line_to_angle_and_center(x1_j, y1_j, x2_j, y2_j)
-
-                angle_diff = min(abs(angle_i - angle_j), 180 - abs(angle_i - angle_j))
-                dist = np.hypot(center_i[0] - center_j[0], center_i[1] - center_j[1])
-
-                if angle_diff < angle_thresh and dist < dist_thresh:
-                    group.append((x1_j, y1_j, x2_j, y2_j))
-                    used[j] = True
-
-            # Fit a line through all points in the group
-            points = []
-            for x1, y1, x2, y2 in group:
-                points.append((x1, y1))
-                points.append((x2, y2))
-            points = np.array(points, dtype=np.int32)
-
-            if len(points) >= 2:
-                [vx, vy, x0, y0] = cv2.fitLine(points, cv2.DIST_L2, 0, 0.01, 0.01)
-                vx, vy = float(vx), float(vy)
-                x0, y0 = float(x0), float(y0)
-
-                # Project line far in both directions using the bounding box of points
-                left = min(points[:, 0])
-                right = max(points[:, 0])
-                top = min(points[:, 1])
-                bottom = max(points[:, 1])
-
-                # Extend line horizontally
-                x1 = int(left)
-                y1 = int(y0 + (x1 - x0) * (vy / vx))
-
-                x2 = int(right)
-                y2 = int(y0 + (x2 - x0) * (vy / vx))
-
-                merged.append((x1, y1, x2, y2))
-
-        return merged
-
-    def draw_lines(self, image, lines):
-        output = image.copy()
-        for x1, y1, x2, y2 in lines:
-            cv2.line(output, (x1, y1), (x2, y2), (0, 0, 255), 2)
-        return output
-
-    def do_lines_intersect(self, p1, p2, q1, q2):
-        def ccw(a, b, c):
-            return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0])
-
-        return ccw(p1, q1, q2) != ccw(p2, q1, q2) and ccw(p1, p2, q1) != ccw(p1, p2, q2)
-
-    def do_line_and_box_intersect(self, line, box):
-        """
-        Check if a line (x1, y1, x2, y2) intersects a box (x1, y1, x2, y2)
-        """
-        lx1, ly1, lx2, ly2 = line
-        bx1, by1, bx2, by2 = box
-
-        # Four edges of the box as line segments
-        box_edges = [
-            (bx1, by1, bx2, by1),  # Top
-            (bx2, by1, bx2, by2),  # Right
-            (bx2, by2, bx1, by2),  # Bottom
-            (bx1, by2, bx1, by1),  # Left
-        ]
-
-        for ex1, ey1, ex2, ey2 in box_edges:
-            if self.do_lines_intersect((lx1, ly1), (lx2, ly2), (ex1, ey1), (ex2, ey2)):
-                return True
-        return False
-
-    def check_connection(self, original_image):
-        original = cv2.imread(original_image)
-        height, width = original.shape[:2]
-        mask = self.extract_blue_lines(self.image)
-        raw_lines = self.detect_lines(mask)
-        merged_lines = self.merge_similar_lines(raw_lines)
-        bottom_threshold = int(height * 0.9)  # Only lines with a point below this y-coordinate
-
-        filtered_lines = []
-        # Step 3: Scan intersections
-        point_hit = False
-        wall_hit = False
-
-        for obj in self.object_list:
-            obj_type = obj.klasse
-
-            box = obj.bounding_box
-            print(f"object_type: {obj_type} bounding_box: {box}")
-            # Barrier on a point (check for complete overlap)
-            if obj_type == "barrier":
-                for point_obj in self.object_list:
-                    if point_obj.klasse.startswith("point"):
-                        px1, py1, px2, py2 = point_obj.bounding_box
-                        bx1, by1, bx2, by2 = box
-
-                        if (
-                                bx1 <= px1 <= bx2 and bx1 <= px2 <= bx2 and
-                                by1 <= py1 <= by2 and by1 <= py2 <= by2
-                        ):
-                            return 3  # Barrier overlaps a point
-
-            # Check line intersections
-            if obj_type.startswith("point") or obj_type == "wall":
-                for line in filtered_lines:
-                    if self.do_line_and_box_intersect(line, box):
-                        if obj_type.startswith("point"):
-                            point_hit = True
-                        elif obj_type == "wall":
-                            wall_hit = True
-
-        # Final logic based on flags
-        if point_hit and wall_hit:
-            return 2  # Point + Wall intersect with line
-        elif point_hit:
-            return 1  # Only point intersects with line
-        else:
-            return 0  # Nothing intersects
-
-
-    def _linien_schneiden(self, p1, p2, q1, q2) -> bool:
-        def ccw(A, B, C): return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
-
-        return ccw(p1, q1, q2) != ccw(p2, q1, q2) and ccw(p1, p2, q1) != ccw(p1, p2, q2)
-
-    def check_wall_on_track(self, punkt1: np.ndarray, punkt2: np.ndarray) -> bool:
-        walls = [obj for obj in self.object_list if obj.klasse == 'wall']
-        if not walls: return False
-        for wall in walls:
-            wx1, wy1, wx2, wy2 = wall.bounding_box
-            wall_ecken = [np.array([wx1, wy1]), np.array([wx2, wy1]), np.array([wx2, wy2]), np.array([wx1, wy2])]
-            wall_kanten = [(wall_ecken[i], wall_ecken[(i + 1) % 4]) for i in range(4)]
-            for kante_start, kante_end in wall_kanten:
-                if self._linien_schneiden(punkt1, punkt2, kante_start, kante_end): return True
-        return False
-
-    def get_turn_direction(self, toleranz_pixel=1000) -> str:
-        if not self.object_list: return "unbekannt"
-        mittigstes_objekt = min(self.object_list, key=lambda o: np.linalg.norm(
-            np.array(o.zentrum) - np.array([self.width / 2, self.height / 2])))
-        objekt_x = mittigstes_objekt.zentrum[0]
-        bildmitte_x = self.width / 2
-        if objekt_x < bildmitte_x - (toleranz_pixel / 2):
-            return "links"
-        elif objekt_x > bildmitte_x + (toleranz_pixel / 2):
-            return "rechts"
-        else:
-            return "mitte"
-
-    def visualize_connection_analysis(self, status_code: int, max_display_height=600):
-        # Kopie des Bildes erstellen, auf der wir zeichnen
-        vis_image = self.image.copy()
-
-        # --- NEU: Alle erkannten Objekte auf das Bild zeichnen ---
-        # Farb-Mapping für verschiedene Objektklassen (BGR-Format)
-        color_map = {
-            'point': (255, 150, 0),  # Hellblau
-            'pointa': (255, 150, 0),
-            'pointb': (255, 150, 0),
-            'pointc': (255, 150, 0),
-            'barrier': (0, 100, 255),  # Dunkles Orange
-            'wall': (128, 128, 128)  # Grau
-        }
-        default_color = (255, 0, 255)  # Magenta für unbekannte Klassen
-
-        # Iteriere durch alle geladenen Objekte
-        for obj in self.object_list:
-            color = color_map.get(obj.klasse, default_color)
-            x1, y1, x2, y2 = map(int, obj.bounding_box)  # In Integer umwandeln
-
-            # Zeichne das Rechteck (Bounding Box)
-            cv2.rectangle(vis_image, (x1, y1), (x2, y2), color, 2)
-
-            # Schreibe den Klassennamen über das Rechteck
-            label = obj.klasse
-            label_pos = (x1, y1 - 10)
-            cv2.putText(vis_image, label, label_pos, cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-        # --- Ende des neuen Teils ---
-
-        # Vorhandene Logik zum Zeichnen der Verbindungslinie (bleibt gleich)
-        if self.last_punkt1 is not None:
-            p1_int = self.last_punkt1.astype(int)
-            # Startpunkt (unten) hervorheben
-            cv2.rectangle(vis_image, (p1_int[0] - 5, p1_int[1] - 5), (p1_int[0] + 5, p1_int[1] + 5), (0, 255, 0), 2)
-            cv2.circle(vis_image, tuple(p1_int), 5, (0, 255, 0), -1)
-
-        if self.last_punkt2 is not None:
-            p2_int = self.last_punkt2.astype(int)
-            # Endpunkt (Zielobjekt) hervorheben
-            cv2.circle(vis_image, tuple(p2_int), 10, (255, 0, 0), 2)  # Größerer Kreis für Ziel
-
-        if self.last_punkt1 is not None and self.last_punkt2 is not None:
-            line_color = {
-                0: (0, 0, 255),  # Rot: Keine Verbindung
-                1: (0, 255, 0),  # Grün: Verbindung OK
-                2: (0, 165, 255),  # Orange: Wand blockiert
-                3: (0, 255, 255)  # Gelb: Barriere als Ziel
-            }.get(status_code, (0, 0, 255))  # Default auf Rot
-            cv2.line(vis_image, tuple(self.last_punkt1.astype(int)), tuple(self.last_punkt2.astype(int)), line_color, 2)
-
-        status_map = {0: "Keine Verbindung", 1: "Verbindung OK", 2: "Wand blockiert", 3: "Barriere als Ziel"}
-        status_text = f"Status: {status_code} ({status_map.get(status_code, 'Unbekannt')})"
-
-        # Text mit schwarzem Rand für bessere Lesbarkeit
-        cv2.putText(vis_image, status_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4, cv2.LINE_AA)
-        cv2.putText(vis_image, status_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
-        self._show_image("Verbindungs-Analyse", vis_image, max_display_height)
-
-    def _show_image(self, window_title: str, image: np.ndarray, max_height: int):
-        h, w = image.shape[:2]
-        if h > max_height:
-            ratio = w / h
-            new_h = max_height
-            new_w = int(new_h * ratio)
-            image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
-        cv2.imshow(window_title, image)
+                cv2.rectangle(vis_img, (sq['rect'][0], sq['rect'][1]), (sq['rect'][2], sq['rect'][3]), color, thickness)
+        for obj in self.all_objects:
+            obj_type = obj['type'];
+            color = colors.get(obj_type, (200, 200, 200));
+            bbox = obj['bbox']
+            cv2.rectangle(vis_img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
+            cv2.putText(vis_img, obj_type, (bbox[0], bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        if self.start_point:
+            cv2.circle(vis_img, self.start_point, 10, (255, 0, 255), -1)
+            cv2.putText(vis_img, "Start", (self.start_point[0] + 15, self.start_point[1] + 5), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6, (255, 0, 255), 2)
+        if self.winning_object:
+            line_color = colors['line_success']
+            if final_status == 2: line_color = colors['line_blocked']
+            if final_status == 3: line_color = colors['line_barrier']
+            cv2.line(vis_img, self.start_point, self.winning_object['center'], line_color, 3)
+        status_map = {0: "Keine Linie gefunden", 1: "Linie zu Punkt gefunden", 2: "Linie gefunden, aber Wand blockiert",
+                      3: "Linie zu Barriere gefunden"}
+        status_text = f"Ergebnis: {final_status} - {status_map.get(final_status, 'Unbekannt')}"
+        cv2.putText(vis_img, status_text, (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(vis_img, status_text, (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, colors['text'], 2, cv2.LINE_AA)
+        cv2.imshow("Analyse-Visualisierung", vis_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
-    # BITTE PFADE ANPASSEN
-    base_path = "C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/dummy_data"
-    model_path = "C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/my_model.pt" # Modellpfad hier definieren
+    # --- BITTE PFADE HIER ANPASSEN ---
+    try:
+        base_path = "C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/dummy_data"
+        edited_img_path = os.path.join(base_path, "bearbeitet_1a0c5f09-25ad-40fb-9b1a-a5d92b5bbb16.png")
+        original_img_path = edited_img_path# ANPASSEN
+    except Exception as e:
+        print(f"FEHLER bei der Pfadkonfiguration: {e}")
+        exit()
+    # --- ENDE DER PFAD-KONFIGURATION ---
 
-    txt_path = os.path.join(base_path, "detected_objects.txt")
-    img_path = os.path.join(base_path, "1a0c5f09-25ad-40fb-9b1a-a5d92b5bbb16.jpg")
-    edited_path = os.path.join(base_path, "bearbeitet_1a0c5f09-25ad-40fb-9b1a-a5d92b5bbb16.png")
+    # --- SIMULATION DER OBJEKTERKENNUNG AUS .TXT-DATEI ---
+    # Hier wird der Inhalt Ihrer `detected_objects.txt` direkt als String verwendet.
+    print("--- Lese Objektdaten für den Test ---")
+    detected_objects_string_content = """
+    wall;94.0%;(759, 260, 882, 323);7749;(820.5, 291.5);
+    point;72.7%;(814, 80, 854, 96);640;(834.0, 88.0);
+    """
 
-    # 1. BESSERER VARIABLENNAME: Nenne die Instanz z.B. "detector" statt "YoloDetector"
-    detector = YoloDetector(model_path=model_path)
-
-    # 2. KORRIGIERTER AUFRUF: Übergib nur die notwendigen Argumente.
-    #    Hinweis: "object" ist ein eingebauter Name in Python, besser "detected_objects" verwenden.
-    detected_objects = detector.detect(img_path)
-    detector.save_to_txt(detected_objects, txt_path)
+    # Die Hilfsfunktion parst den String und erstellt die Objektliste
+    detected_objects = parse_objects_from_string(detected_objects_string_content)
+    print(f"{len(detected_objects)} Objekte geparst.")
+    for obj in detected_objects:
+        print(f"  - {obj}")
+    # --- ENDE DER SIMULATION ---
 
     try:
-        pruefer = CheckConnection(image_path=edited_path, txt_path=txt_path)
-        print("--- Analyse wird gestartet ---")
-        verbindungs_status = pruefer.check_connection(img_path)
-        status_map = {0: "Keine Verbindung", 1: "Verbindung OK", 2: "Wand blockiert", 3: "Barriere als Ziel"}
-        print(f"Verbindungsstatus: {verbindungs_status} ({status_map.get(verbindungs_status, 'Unbekannt')})")
+        # Schritt 2: Verbindungsanalyse starten
+        print("\n--- Schritt 2: Starte Verbindungsanalyse ---")
+        pruefer = CheckConnection(
+            image_with_lines_path=edited_img_path,
+            original_image_path=original_img_path,
+            object_list=detected_objects
+        )
 
-        print("INFO: Visualisierung der Analyse wird angezeigt...")
-        pruefer.visualize_connection_analysis(verbindungs_status)
+        verbindungs_status = pruefer.check_connection(
+            linien_schwelle=0.05,
+            weiss_schwelle=240,
+            balken_breite=15
+        )
 
-        print("\n--- Analyse abgeschlossen ---")
+        status_bedeutung = {
+            0: "Keine Linie gefunden",
+            1: "Linie zu Punkt gefunden",
+            2: "Linie gefunden, aber Wand blockiert",
+            3: "Linie zu Barriere gefunden"
+        }
+
+        print(f"\nFinaler Verbindungsstatus: {verbindungs_status}")
+        print(f"Bedeutung: {status_bedeutung.get(verbindungs_status, 'Unbekannt')}")
+
+        # Schritt 3: Ergebnis visualisieren
+        print("\n--- Schritt 3: Visualisiere Ergebnis ---")
+        pruefer.visualize_connection_analysis(
+            final_status=verbindungs_status,
+            show_grid=True
+        )
+        print("--- Analyse abgeschlossen ---")
 
     except FileNotFoundError as e:
-        print(f"FEHLER: Datei nicht gefunden. Bitte überprüfe die Pfade. Details: {e}")
+        print(f"\nFEHLER: Eine Datei wurde nicht gefunden. Bitte überprüfen Sie die Pfade.")
+        print(f"Detail: {e}")
     except Exception as e:
-        print(f"Ein unerwarteter Fehler ist aufgetreten: {e}")
+        import traceback
+
+        print(f"\nEin unerwarteter Fehler ist aufgetreten:")
+        traceback.print_exc()
