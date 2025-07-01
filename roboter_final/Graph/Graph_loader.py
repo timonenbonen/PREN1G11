@@ -31,22 +31,33 @@ def load_nodes_and_edges() -> Tuple[Dict[str, Cylinder], Dict[str, Box]]:
         for name, pos in node_positions.items()
     }
 
-    edges = {
-        "E_F": Box(name="E_F", node1=nodes['E'], node2=nodes['F']),
-        "E_D": Box(name="E_D", node1=nodes['E'], node2=nodes['D']),
-        "E_G": Box(name="E_G", node1=nodes['E'], node2=nodes['G']),
-        "D_A": Box(name="D_A", node1=nodes['D'], node2=nodes['A']),
-        "D_G": Box(name="D_G", node1=nodes['D'], node2=nodes['G']),
-        "A_B": Box(name="A_B", node1=nodes['A'], node2=nodes['B']),
-        "A_H": Box(name="A_H", node1=nodes['A'], node2=nodes['H']),
-        "A_G": Box(name="A_G", node1=nodes['A'], node2=nodes['G']),
-        "B_C": Box(name="B_C", node1=nodes['B'], node2=nodes['C']),
-        "B_H": Box(name="B_H", node1=nodes['B'], node2=nodes['H']),
-        "C_H": Box(name="C_H", node1=nodes['C'], node2=nodes['H']),
-        "C_F": Box(name="C_F", node1=nodes['C'], node2=nodes['F']),
-        "F_H": Box(name="F_H", node1=nodes['F'], node2=nodes['H']),
-        "F_G": Box(name="F_G", node1=nodes['F'], node2=nodes['G']),
-        "H_G": Box(name="H_G", node1=nodes['H'], node2=nodes['G'])
-    }
+    # Define original edges
+    raw_edges = [
+        ("E", "F"),
+        ("E", "D"),
+        ("E", "G"),
+        ("D", "A"),
+        ("D", "G"),
+        ("A", "B"),
+        ("A", "H"),
+        ("A", "G"),
+        ("B", "C"),
+        ("B", "H"),
+        ("C", "H"),
+        ("C", "F"),
+        ("F", "H"),
+        ("F", "G"),
+        ("H", "G"),
+    ]
+
+    edges: Dict[str, Box] = {}
+
+    for node1, node2 in raw_edges:
+        key1 = f"{node1}_{node2}"
+        key2 = f"{node2}_{node1}"
+
+        # Create edge in both directions
+        edges[key1] = Box(name=key1, node1=nodes[node1], node2=nodes[node2])
+        edges[key2] = Box(name=key2, node1=nodes[node2], node2=nodes[node1])
 
     return nodes, edges

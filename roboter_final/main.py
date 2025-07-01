@@ -134,18 +134,12 @@ def traverse_graph():
 
         elif line_status == 3:
             print("Barrier im Weg")
-            graph.nodes[next_node].change_is_blocked()
+            graph.nodes[next_node].set_is_blocked(True)
 
 
 
         if not next_node:
             print("❌ Kein Pfad gefunden. Abbruch.")
-            #break
-        current_edge:str = f"{graph.current_node.name}_{next_node}"
-        print(f"check if {current_edge} has obstacle")
-
-        #current_node = communication.read_position()
-        #print(f"✅ Neue Position: {current_node}")
 
         time.sleep(1)
 

@@ -23,6 +23,9 @@ class Cylinder(Shape):
     def change_is_blocked(self):
         self.is_blocked = not self.is_blocked
 
+    def set_is_blocked(self, is_blocked: bool):
+        self.is_blocked = is_blocked
+
     def mirror_y_axis(self, coordination_system_size: float) -> None:
         new_coordinates: tuple[float, float, float] = (
         self.position[0], coordination_system_size - self.position[1], self.position[2])
