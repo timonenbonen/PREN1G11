@@ -43,7 +43,7 @@ def detect_objects(image_path: str):
 def drive_with_direction(direction: str, has_obstacle: bool ):
     communication.special_command(0,69,0)
 
-    communication.drive(direction, 0, has_obstacle) #communication.special_command(0, 50, int(has_obstacle))
+    communication.special_command(0, 50, int(has_obstacle)) #communication.special_command(0, 50, int(has_obstacle))
 
 
 def align_with_next_edge(graph:Graph, current_orientation:float):
