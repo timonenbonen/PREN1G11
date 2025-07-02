@@ -5,7 +5,8 @@ import os
 
 def replace_colors_with_white(img, bgr_colors, tol):
     """
-    Findet eine Liste von Farben in einem Bild und ersetzt sie durch Weiß.
+    Ersetzt zuerst reine Weißpixel mit einem weicheren Farbton,
+    dann ersetzt die angegebenen Farben durch echtes Weiß.
 
     Args:
         img: Das Eingabebild (BGR-Format von OpenCV).
@@ -16,16 +17,23 @@ def replace_colors_with_white(img, bgr_colors, tol):
     Returns:
         Ein neues Bild im BGR-Format, bei dem die Farben durch Weiß ersetzt wurden.
     """
-    master_mask = np.zeros(img.shape[:2], dtype=np.uint8)
+
+    # 1️⃣ Reines Weiß (255,255,255) zuerst durch soften Farbton ersetzen
+    result_img = img.copy()
+    white_pixels = np.all(result_img > 250, axis=-1)
+    result_img[white_pixels] = [231,252,254]  # weichere Farbe
+
+    # 2️⃣ Maske aufbauen für alle Ziel-Farben
+    master_mask = np.zeros(result_img.shape[:2], dtype=np.uint8)
 
     for bgr_color in bgr_colors:
-        untere_grenze = np.clip(np.array(bgr_color, dtype=np.int32) - tol, 0, 255).astype(np.uint8)
-        obere_grenze = np.clip(np.array(bgr_color, dtype=np.int32) + tol, 0, 255).astype(np.uint8)
+        lower = np.clip(np.array(bgr_color, dtype=np.int32) - tol, 0, 255).astype(np.uint8)
+        upper = np.clip(np.array(bgr_color, dtype=np.int32) + tol, 0, 255).astype(np.uint8)
 
-        temp_mask = cv2.inRange(img, untere_grenze, obere_grenze)
+        temp_mask = cv2.inRange(result_img, lower, upper)
         master_mask = cv2.bitwise_or(master_mask, temp_mask)
 
-    result_img = img.copy()
+    # 3️⃣ Ziel-Farben durch pures Weiß ersetzen
     result_img[master_mask > 0] = [255, 255, 255]
 
     return result_img
@@ -34,11 +42,11 @@ def replace_colors_with_white(img, bgr_colors, tol):
 def process_image(input_path: str,
                   # NEU: Liste mit deinen zwei spezifischen Farben
                   bgr_colors=[
-                      (148, 125, 109),    # BGR für RGB(109, 125, 148)
+                      (135, 115, 100),    # BGR für RGB(109, 125, 148)
                       (51, 59, 76)         # BGR für RGB(76, 59, 51)
                   ],
                   # NEU: Viel kleinere, sinnvollere Standard-Toleranz
-                  tol=90):
+                  tol=95):
     """
     Liest ein Bild, ruft die Funktion zum Ersetzen der Farben auf und speichert das Ergebnis.
     """
