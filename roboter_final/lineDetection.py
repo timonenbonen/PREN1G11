@@ -38,7 +38,7 @@ def process_image(input_path: str,
                       (51, 59, 76)         # BGR für RGB(76, 59, 51)
                   ],
                   # NEU: Viel kleinere, sinnvollere Standard-Toleranz
-                  tol=100):
+                  tol=90):
     """
     Liest ein Bild, ruft die Funktion zum Ersetzen der Farben auf und speichert das Ergebnis.
     """
@@ -68,7 +68,7 @@ def process_image(input_path: str,
 
 # Beispiel für die Verwendung
 if __name__ == '__main__':
-    image_to_process = 'C:/Users/marin/PycharmProjects/PREN1G11/roboter_final/dummy_data/cf68ede5-0980-411a-bca6-8ec358e0a8e5.jpg'
+    image_to_process = 'C:/Users/timon/hslu/4sem/Pren1/PREN1G11/roboter_final/dummy_data/G.jpg'
     if os.path.exists(image_to_process):
         # Der Aufruf verwendet jetzt die neuen Standardeinstellungen (deine Farben, kleine Toleranz).
         # Du kannst die Toleranz hier immer noch überschreiben, falls nötig.
