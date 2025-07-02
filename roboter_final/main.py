@@ -10,7 +10,6 @@ import os
 from roboter_final.CheckConection import  CheckConnection
 from roboter_final.Graph.Graph import Graph
 from roboter_final.DegreeInMs import Degree2Milliseconds
-from roboter_final.Camera import Camera
 
 START_NODE = "E"
 TARGET_NODES = ["A", "B", "C"]
@@ -100,8 +99,8 @@ def traverse_graph():
 
         print(f"📍 Aktueller Punkt: {graph.current_node}")
 
-        image_path = camera.capture(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
-        #image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
+        #image_path = camera.capture(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
+        image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
 
         print(image_path)
