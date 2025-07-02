@@ -77,7 +77,7 @@ def align_with_next_edge(graph:Graph, current_orientation:float):
 
 def traverse_graph():
     target_node = communication.read_position()
-    camera = Camera()
+    #camera = Camera()
     graph: Graph = Graph(target_node)
     print(graph.nodes[target_node])
 
