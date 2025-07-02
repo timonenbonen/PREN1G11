@@ -10,6 +10,7 @@ import os
 from roboter_final.CheckConection import  CheckConnection
 from roboter_final.Graph.Graph import Graph
 from roboter_final.DegreeInMs import Degree2Milliseconds
+from roboter_final.Camera import Camera
 
 START_NODE = "E"
 TARGET_NODES = ["A", "B", "C"]
@@ -77,7 +78,7 @@ def align_with_next_edge(graph:Graph, current_orientation:float):
 
 def traverse_graph():
     target_node = communication.read_position()
-
+    camera = Camera()
     graph: Graph = Graph(target_node)
     print(graph.nodes[target_node])
 
@@ -99,8 +100,9 @@ def traverse_graph():
 
         print(f"📍 Aktueller Punkt: {graph.current_node}")
 
+        image_path = camera.capture(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
+        #image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
-        image_path = capture_picture_from_api(os.path.join(PICTURES, f"{graph.current_node.name}.jpg"))
 
         print(image_path)
         objects = detect_objects(image_path)
@@ -142,14 +144,16 @@ def traverse_graph():
 
     print(f"🎉 Ziel erreicht: {graph.current_node}")
     communication.flash_led(5, 1)
+    camera.close()
 
 def main():
     try:
-        reset_tof()
+
         traverse_graph()
     finally:
         GPIO.cleanup()
         print("🧹 GPIO aufgeräumt")
+
 
 if __name__ == "__main__":
     main()
